@@ -678,14 +678,16 @@ function loadTransport(){
 }
 
 function takeCar(carId){
-  var nick = myNick || myUserName;
+  var nick = myNick || myUserName || sGet('fama_nick');
   if(!nick){ showToast('⚠️ Введи своё имя!'); return; }
-  if(!myUserId){ showToast('⚠️ Открой через Telegram!'); return; }
   var car = CARS.filter(function(c){ return c.id === carId; })[0];
   if(!car) return;
 
+  // Используем имя как уникальный идентификатор если userId недоступен
+  var uid = myUserId || Math.abs(nick.split('').reduce(function(a,b){return a+b.charCodeAt(0);},0));
+
   // Оптимистичное обновление
-  trState[carId] = { by: nick, uid: myUserId };
+  trState[carId] = { by: nick, uid: uid };
   renderTr();
 
   fetch(API_URL + '/transport/take', {
@@ -694,7 +696,7 @@ function takeCar(carId){
     body: JSON.stringify({
       car_id: carId,
       car_name: car.name,
-      user_id: myUserId,
+      user_id: uid,
       user_name: nick
     })
   })
@@ -702,8 +704,8 @@ function takeCar(carId){
   .then(function(data){
     if(data.ok){
       showToast('🚗 Машина занята!');
+      sSet('my_uid', String(uid));
     } else {
-      // Откат — кто-то уже занял
       delete trState[carId];
       loadTransport();
       if(data.reason === 'occupied') showToast('❌ Уже занята: ' + (data.by || ''));
@@ -718,13 +720,15 @@ function takeCar(carId){
 }
 
 function freeCar(carId){
+  var nick = myNick || myUserName || sGet('fama_nick');
+  var uid = myUserId || parseInt(sGet('my_uid') || '0') || Math.abs((nick||'').split('').reduce(function(a,b){return a+b.charCodeAt(0);},0));
   delete trState[carId];
   renderTr();
 
   fetch(API_URL + '/transport/free', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ car_id: carId, user_id: myUserId })
+    body: JSON.stringify({ car_id: carId, user_id: uid })
   })
   .then(function(r){ return r.json(); })
   .then(function(data){
@@ -749,7 +753,9 @@ function renderTr(){
   grid.innerHTML = '';
   CARS.forEach(function(car){
     var occ = trState[car.id];
-    var isMe = occ && occ.uid === myUserId;
+    var savedUid = myUserId || parseInt(sGet('my_uid') || '0');
+    var nick = myNick || sGet('fama_nick');
+    var isMe = occ && (occ.uid === savedUid || (nick && occ.by === nick));
     var div = document.createElement('div');
     div.className = 'carcard ' + (occ ? 'occ' : 'free');
     var btnEl = document.createElement('button');
