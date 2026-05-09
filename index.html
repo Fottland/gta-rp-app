@@ -629,134 +629,160 @@ function renderAnl(){
   document.getElementById('anlFav').textContent=s.length&&s[0].count>0?s[0].name:'—';
 }
 
-// ============ TRANSPORT (синхронизация через бота) ============
+// ============ TRANSPORT (HTTP API синхронизация) ============
 var trState = {};
 var myUserId = 0;
+var myUserName = '';
+// ЗАМЕНИ НА IP ТВОЕГО СЕРВЕРА:
+var API_URL = 'http://5.101.116.63:3000';
+
 (function(){
   try {
-    if(window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.initDataUnsafe){
-      var u=window.Telegram.WebApp.initDataUnsafe.user;
-      if(u){myUserId=u.id;}
+    if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe){
+      var u = window.Telegram.WebApp.initDataUnsafe.user;
+      if(u){
+        myUserId = u.id;
+        myUserName = u.first_name + (u.username ? ' (@'+u.username+')' : '');
+      }
     }
   } catch(e){}
 })();
 
 function saveNick(){
-  var v=document.getElementById('nickInput').value.trim();
-  if(!v){showToast('❌ Введи имя');return;}
-  myNick=v;sSet('fama_nick',v);showToast('✅ Имя: '+v);
+  var v = document.getElementById('nickInput').value.trim();
+  if(!v){ showToast('❌ Введи имя'); return; }
+  myNick = v;
+  sSet('fama_nick', v);
+  showToast('✅ Имя: ' + v);
 }
 
-function sendToBot(data){
-  try{
-    if(window.Telegram&&window.Telegram.WebApp){
-      window.Telegram.WebApp.sendData(JSON.stringify(data));
-    } else {
-      // Локальный fallback для тестирования в браузере
-      var s=getTrState();
-      if(data.type==='take_car'){s[data.car_id]={by:myNick||'Я',uid:0};setTrState(s);}
-      else if(data.type==='free_car'){delete s[data.car_id];setTrState(s);}
-      trState=getTrState();
+function loadTransport(){
+  document.getElementById('trGrid').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">🔄 Загрузка...</div>';
+  fetch(API_URL + '/transport')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.ok){
+        trState = {};
+        Object.keys(data.state).forEach(function(id){
+          if(data.state[id].occupied){
+            trState[id] = { by: data.state[id].by, uid: data.state[id].uid };
+          }
+        });
+        renderTr();
+      }
+    })
+    .catch(function(e){
+      showToast('❌ Ошибка подключения к серверу');
       renderTr();
-    }
-  }catch(e){showToast('❌ '+e.message);}
-}
-
-function getTrState(){try{var d=sGet('fama_tr');return d?JSON.parse(d):{};}catch(e){return {};}}
-function setTrState(s){sSet('fama_tr',JSON.stringify(s));}
-
-// Получаем ответ от бота
-if(window.Telegram&&window.Telegram.WebApp){
-  try{
-    window.Telegram.WebApp.onEvent('message',function(msg){
-      try{
-        var data=JSON.parse(typeof msg==='string'?msg:(msg.text||'{}'));
-        if(data.type==='transport_state'){
-          trState=data.state||{};
-          renderTr();
-          if(data.action==='taken')showToast('🚗 Машина занята!');
-          if(data.action==='freed')showToast('✅ Машина освобождена!');
-        }
-        if(data.type==='transport_error'){
-          if(data.reason==='occupied')showToast('❌ Уже занята: '+(data.by||''));
-          if(data.reason==='not_yours')showToast('❌ Это не твоя машина!');
-          // Откатываем оптимистичное обновление
-          trState=data.serverState||trState;
-          renderTr();
-        }
-      }catch(e){}
     });
-  }catch(e){}
 }
 
 function takeCar(carId){
-  if(!myNick){showToast('⚠️ Введи своё имя!');return;}
-  var car=CARS.filter(function(c){return c.id===carId;})[0];
-  if(!car)return;
-  trState[carId]={by:myNick,uid:myUserId};
+  var nick = myNick || myUserName;
+  if(!nick){ showToast('⚠️ Введи своё имя!'); return; }
+  if(!myUserId){ showToast('⚠️ Открой через Telegram!'); return; }
+  var car = CARS.filter(function(c){ return c.id === carId; })[0];
+  if(!car) return;
+
+  // Оптимистичное обновление
+  trState[carId] = { by: nick, uid: myUserId };
   renderTr();
-  showToast('🚗 Занимаю...');
-  sendToBot({type:'take_car',car_id:carId,car_name:car.name});
+
+  fetch(API_URL + '/transport/take', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      car_id: carId,
+      car_name: car.name,
+      user_id: myUserId,
+      user_name: nick
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.ok){
+      showToast('🚗 Машина занята!');
+    } else {
+      // Откат — кто-то уже занял
+      delete trState[carId];
+      loadTransport();
+      if(data.reason === 'occupied') showToast('❌ Уже занята: ' + (data.by || ''));
+      else showToast('❌ Не удалось занять');
+    }
+  })
+  .catch(function(){
+    delete trState[carId];
+    renderTr();
+    showToast('❌ Ошибка соединения');
+  });
 }
 
 function freeCar(carId){
   delete trState[carId];
   renderTr();
-  showToast('🔓 Освобождаю...');
-  sendToBot({type:'free_car',car_id:carId});
-}
 
-function loadTransport(){
-  if(window.Telegram&&window.Telegram.WebApp){
-    sendToBot({type:'get_transport'});
-  } else {
-    trState=getTrState();
-    renderTr();
-  }
+  fetch(API_URL + '/transport/free', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ car_id: carId, user_id: myUserId })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data.ok){
+      showToast('✅ Машина освобождена!');
+    } else {
+      showToast('❌ ' + (data.reason === 'not_yours' ? 'Это не твоя машина!' : 'Ошибка'));
+      loadTransport();
+    }
+  })
+  .catch(function(){
+    showToast('❌ Ошибка соединения');
+    loadTransport();
+  });
 }
 
 function renderTr(){
-  var free=CARS.filter(function(c){return !trState[c.id];}).length;
-  document.getElementById('trFree').textContent=free;
-  document.getElementById('trOcc').textContent=CARS.length-free;
-  var grid=document.getElementById('trGrid');
-  grid.innerHTML='';
+  var free = CARS.filter(function(c){ return !trState[c.id]; }).length;
+  document.getElementById('trFree').textContent = free;
+  document.getElementById('trOcc').textContent = CARS.length - free;
+  var grid = document.getElementById('trGrid');
+  grid.innerHTML = '';
   CARS.forEach(function(car){
-    var occ=trState[car.id];
-    var isMe=occ&&(occ.uid===myUserId||(myUserId===0&&occ.by===myNick));
-    var div=document.createElement('div');
-    div.className='carcard '+(occ?'occ':'free');
-    var btnEl=document.createElement('button');
+    var occ = trState[car.id];
+    var isMe = occ && occ.uid === myUserId;
+    var div = document.createElement('div');
+    div.className = 'carcard ' + (occ ? 'occ' : 'free');
+    var btnEl = document.createElement('button');
     if(!occ){
-      btnEl.className='car-actbtn btake';
-      btnEl.textContent='🔑 Занять';
-      btnEl.onclick=(function(id){return function(){takeCar(id);};})(car.id);
+      btnEl.className = 'car-actbtn btake';
+      btnEl.textContent = '🔑 Занять';
+      btnEl.onclick = (function(id){ return function(){ takeCar(id); }; })(car.id);
     } else if(isMe){
-      btnEl.className='car-actbtn bfreecar';
-      btnEl.textContent='🔓 Освободить';
-      btnEl.onclick=(function(id){return function(){freeCar(id);};})(car.id);
+      btnEl.className = 'car-actbtn bfreecar';
+      btnEl.textContent = '🔓 Освободить';
+      btnEl.onclick = (function(id){ return function(){ freeCar(id); }; })(car.id);
     } else {
-      btnEl.className='car-actbtn bother';
-      btnEl.textContent='🔒 Занято';
-      btnEl.disabled=true;
+      btnEl.className = 'car-actbtn bother';
+      btnEl.textContent = '🔒 Занято';
+      btnEl.disabled = true;
     }
-    var whoTxt=occ
-      ?'<div class="car-who">Занял: <b>'+occ.by+'</b></div>'
-      :'<div class="car-who"><span class="freetext">✓ Свободна</span></div>';
-    div.innerHTML='<div class="cartop">'
-      +'<div class="car-em">'+car.em+'</div>'
-      +'<div class="car-info"><div class="car-name">'+car.name+'</div><div class="car-code">'+car.id+'</div></div>'
-      +'<div class="car-badge '+(occ?'bocc':'bfree')+'">'+(occ?'🔴 Занята':'🟢 Свободна')+'</div>'
-      +'</div>'
-      +'<div class="carbot">'+whoTxt+'</div>';
+    var whoTxt = occ
+      ? '<div class="car-who">Занял: <b>' + occ.by + '</b></div>'
+      : '<div class="car-who"><span class="freetext">✓ Свободна</span></div>';
+    div.innerHTML = '<div class="cartop">'
+      + '<div class="car-em">' + car.em + '</div>'
+      + '<div class="car-info"><div class="car-name">' + car.name + '</div><div class="car-code">' + car.id + '</div></div>'
+      + '<div class="car-badge ' + (occ ? 'bocc' : 'bfree') + '">' + (occ ? '🔴 Занята' : '🟢 Свободна') + '</div>'
+      + '</div>'
+      + '<div class="carbot">' + whoTxt + '</div>';
     div.querySelector('.carbot').appendChild(btnEl);
     grid.appendChild(div);
   });
-  var refreshBtn=document.createElement('button');
-  refreshBtn.className='add-btn';
-  refreshBtn.style.margin='10px 0 0';
-  refreshBtn.textContent='🔄 Обновить статус';
-  refreshBtn.onclick=loadTransport;
+  var refreshBtn = document.createElement('button');
+  refreshBtn.className = 'add-btn';
+  refreshBtn.style.margin = '10px 0 0';
+  refreshBtn.textContent = '🔄 Обновить статус';
+  refreshBtn.onclick = loadTransport;
   grid.appendChild(refreshBtn);
 }
 
