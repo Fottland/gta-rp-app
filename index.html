@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>GTA RP Таймеры</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root[data-theme="dark"]{--bg:#0f0f13;--bg2:#16161d;--bg3:#1e1e28;--card:#1a1a24;--card2:#222230;--border:rgba(255,255,255,0.08);--text:#f0f0f5;--text2:#9090a8;--text3:#5a5a72;--accent:#f5a623;--accent2:#ff6b35;--green:#2ecc71;--gbg:rgba(46,204,113,0.12);--red:#e74c3c;--rbg:rgba(231,76,60,0.12);--blue:#3498db;--glow:rgba(245,166,35,0.15);--shadow:rgba(0,0,0,0.5)}
+:root[data-theme="light"]{--bg:#f0f0f7;--bg2:#e4e4ee;--bg3:#d8d8e8;--card:#fff;--card2:#f5f5fc;--border:rgba(0,0,0,0.09);--text:#1a1a2e;--text2:#555570;--text3:#9090a8;--accent:#d4890a;--accent2:#e05010;--green:#22a85a;--gbg:rgba(34,168,90,0.1);--red:#c0392b;--rbg:rgba(192,57,43,0.1);--blue:#2471a3;--glow:rgba(212,137,10,0.1);--shadow:rgba(0,0,0,0.12)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s}
+#app{max-width:420px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:72px}
+/* HEADER */
+.hdr{padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:100;border-bottom:1px solid var(--border)}
+.hdr-title{font-size:20px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
+.hdr-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.theme-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+/* NOTIFY */
+.nbar{margin:10px 14px 4px;background:var(--gbg);border:1px solid var(--green);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--green);cursor:pointer}
+.nhint{margin:0 14px 8px;font-size:11px;color:var(--text3)}
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 14px}
+.scard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center}
+.snum{font-size:28px;font-weight:700;color:var(--accent);line-height:1}
+.slbl{font-size:11px;color:var(--text3);margin-top:3px}
+/* ADD BTN */
+.add-btn{margin:8px 14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:14px;padding:14px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;width:calc(100% - 28px);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 20px rgba(245,166,35,.3)}
+.add-btn:active{transform:scale(.98)}
+.drag-hint{text-align:center;font-size:11px;color:var(--text3);margin-bottom:8px}
+/* TIMER GRID */
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px}
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;position:relative;overflow:hidden;transition:border-color .3s,box-shadow .3s}
+.tcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s}
+.tcard.running{border-color:rgba(245,166,35,.4);box-shadow:0 0 20px var(--glow)}
+.tcard.running::before{opacity:1;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.tcard.ready{border-color:rgba(46,204,113,.4)}
+.tcard.ready::before{opacity:1;background:var(--green)}
+.cdrag{color:var(--text3);font-size:12px;margin-bottom:3px}
+.cname{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cstatus{font-size:11px;font-weight:600;margin-bottom:5px;height:14px}
+.cstatus.sr{color:var(--green)}
+.cstatus.srun{color:var(--accent)}
+.cstatus.sp{color:var(--text3)}
+.ctime{font-size:24px;font-weight:700;color:var(--text);letter-spacing:1px;font-variant-numeric:tabular-nums}
+.ctime.tr{color:var(--accent)}
+.ctime.tready{color:var(--green)}
+.pbar-bg{height:3px;background:var(--bg3);border-radius:2px;margin:5px 0;overflow:hidden}
+.pbar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width 1s linear}
+.pbar.pfull{background:var(--green);width:100%!important}
+.cbtns{display:flex;gap:6px;margin-top:8px}
+.cbtn{flex:1;height:32px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;transition:all .18s}
+.cbtn:active{transform:scale(.94)}
+.btn-go{background:var(--green);color:#fff}
+.btn-pause{background:var(--accent);color:#fff}
+.btn-reset{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.ccount{font-size:10px;color:var(--text3);margin-top:5px}
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:420px;background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:200}
+.nitem{flex:1;display:flex;flex-direction:column;align-items:center;padding:7px 2px 10px;cursor:pointer;gap:2px;font-size:9.5px;color:var(--text3);font-weight:500;transition:color .2s}
+.nitem.active{color:var(--accent)}
+.nicon{font-size:19px}
+/* PAGES */
+.page{display:none;flex:1;flex-direction:column}
+.page.active{display:flex}
+.scrollp{overflow-y:auto}
+/* MODALS */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:flex-end}
+.moverlay.open{display:flex}
+.modal{background:var(--card);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;animation:mup .3s ease-out}
+@keyframes mup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mtitle{font-size:18px;font-weight:700;color:var(--text);margin-bottom:14px;text-align:center}
+.minput{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:15px;color:var(--text);outline:none;margin-bottom:10px;transition:border-color .2s;font-family:inherit}
+.minput:focus{border-color:var(--accent)}
+.mbtns{display:flex;gap:10px;margin-top:6px}
+.mbtn{flex:1;padding:12px;border-radius:12px;border:none;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.mbtn:active{transform:scale(.97)}
+.mbc{background:var(--bg3);color:var(--text2)}
+.mbo{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.pchips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.pchips::-webkit-scrollbar{display:none}
+.pchip{flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:6px 11px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .2s}
+.pchip.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+.plabel{font-size:11px;color:var(--text3);margin-bottom:7px;font-weight:600;letter-spacing:.5px}
+/* CONFIRM */
+.cbody{text-align:center}
+.cbody p{color:var(--text2);font-size:14px;margin-bottom:20px;line-height:1.6}
+.cname-hl{color:var(--accent);font-weight:700}
+/* CASINO */
+.casin-hdr{padding:14px 14px 8px;font-size:20px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
+.casin-sub{font-size:12px;color:var(--text3);font-weight:400}
+.tut-bar{margin:0 14px 6px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer}
+.tut-block{margin:0 14px 10px;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:none}
+.tut-intro{padding:12px 14px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);line-height:1.6}
+.tut-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.titem{background:var(--card);padding:10px 12px}
+.titem-icon{font-size:16px;margin-bottom:3px}
+.titem-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.titem-odds{font-size:11px;color:var(--accent);font-weight:700;margin-bottom:3px}
+.titem-desc{font-size:11px;color:var(--text3);line-height:1.4}
+.tut-tip{padding:10px 14px;font-size:12px;color:var(--text2);line-height:1.5;border-top:1px solid var(--border);background:rgba(245,166,35,.05)}
+/* WHEEL */
+.wheel-wrap{display:flex;align-items:center;gap:12px;padding:10px 14px 6px}
+.wheel{width:78px;height:78px;border-radius:50%;background:radial-gradient(circle,#1a3a1a 30%,#0d1f0d 70%);border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 18px rgba(245,166,35,.2)}
+.wheel.spin{animation:wspin .6s ease-out}
+@keyframes wspin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+.wnum{font-size:24px;font-weight:700;color:var(--text);transition:color .3s;font-variant-numeric:tabular-nums}
+.wlbl{font-size:9px;color:var(--text3)}
+.recnums{display:flex;gap:5px;flex-wrap:wrap}
+.rnum{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
+.rnum.rr{background:var(--red)}
+.rnum.rb{background:#444}
+.rnum.rg{background:var(--green)}
+/* BET TYPES */
+.btype-lbl{padding:0 14px 6px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.5px}
+.btype-scroll{display:flex;gap:7px;overflow-x:auto;padding:0 14px 8px;scrollbar-width:none}
+.btype-scroll::-webkit-scrollbar{display:none}
+.btchip{flex-shrink:0;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:8px 12px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;text-align:center;line-height:1.4;transition:all .2s}
+.btchip span{font-size:10px;color:var(--text3);display:block}
+.btchip.sel{border-color:var(--accent);background:var(--glow);color:var(--accent)}
+.btchip.sel span{color:var(--accent)}
+.bopt-wrap{padding:0 14px 8px}
+.bopt-row{display:flex;flex-wrap:wrap;gap:7px}
+.bopt-btn{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:all .2s;font-family:inherit}
+.bopt-btn:hover,.bopt-btn:active{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* NUMBER GRID */
+.ngrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.ngbtn{height:32px;border-radius:6px;border:none;font-size:13px;font-weight:700;color:#fff;cursor:pointer;transition:all .18s;font-family:inherit}
+.ngbtn:active{transform:scale(.9)}
+.ng0{background:var(--green);grid-column:span 3}
+.ngr{background:var(--red)}
+.ngb{background:#444;border:1px solid #666}
+/* ACTIVE BETS */
+.abets-hdr{padding:0 14px 6px;display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.5px}
+.clr-btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;color:var(--text3);cursor:pointer;font-family:inherit}
+.abets{margin:0 14px 8px;display:flex;flex-direction:column;gap:6px;min-height:36px}
+.nobet{color:var(--text3);font-size:12px;font-style:italic;padding:6px 0}
+.abet-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;justify-content:space-between;align-items:center}
+.abet-lbl{font-size:13px;font-weight:600;color:var(--text)}
+.abet-rm{background:var(--rbg);border:1px solid var(--red);border-radius:6px;color:var(--red);font-size:12px;cursor:pointer;padding:3px 8px;font-family:inherit}
+/* CASINO STATS */
+.cstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 14px 0}
+/* HISTORY */
+.rhwrap{margin:8px 14px}
+.rhlbl{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:7px;letter-spacing:.5px}
+.rhdots{display:flex;flex-wrap:wrap;gap:5px}
+.rhemp{font-size:12px;color:var(--text3);font-style:italic}
+.rhdot{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+/* ANALYSIS */
+.anblock{margin:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+.antitle{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.anstitle{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.5px;margin-bottom:8px;text-transform:uppercase}
+.carow{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.carow:last-of-type{border-bottom:none}
+.caname{font-size:12px;font-weight:600;color:var(--text);min-width:80px}
+.cabar-bg{flex:1;margin:0 8px;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.cabar{height:100%;border-radius:3px;transition:width .8s ease}
+.capct{font-size:12px;font-weight:700;min-width:36px;text-align:right}
+.hotnum{display:inline-flex;align-items:center;gap:2px;padding:4px 9px;border-radius:8px;font-size:13px;font-weight:700;color:#fff;margin:2px}
+.coldnum{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;border:1px solid;font-size:12px;font-weight:700;background:transparent;margin:2px}
+.divider{height:1px;background:var(--border);margin:10px 0}
+.recbox{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid transparent}
+.recbox.rh{background:var(--rbg);border-color:rgba(231,76,60,.3)}
+.recbox.rw{background:var(--glow);border-color:rgba(245,166,35,.3)}
+.recbox.rc{background:rgba(52,152,219,.08);border-color:rgba(52,152,219,.25)}
+/* NUM INPUT */
+.numinput-wrap{display:flex;gap:8px;padding:0 14px 4px}
+.numinput{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:15px;color:var(--text);outline:none;transition:border-color .2s;font-family:inherit}
+.numinput:focus{border-color:var(--accent)}
+.ar-btn{height:42px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:inherit;transition:all .2s;padding:0 14px}
+.ar-btn:active{transform:scale(.95)}
+.arw{background:var(--gbg);color:var(--green);border:1px solid var(--green)}
+.arw:hover{background:var(--green);color:#fff}
+.arr{background:var(--rbg);color:var(--red);border:1px solid var(--red)}
+.arr:hover{background:var(--red);color:#fff}
+.ar0{background:var(--bg3);color:var(--text3);border:1px solid var(--border);width:42px;flex-shrink:0;font-size:16px;padding:0}
+/* TRANSPORT */
+.tr-hdr{padding:14px 14px 8px;display:flex;align-items:center;justify-content:space-between}
+.tr-title{font-size:20px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
+.tr-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.tr-hint{margin:0 14px 10px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:12px;color:var(--text2);line-height:1.5}
+.tr-hint b{color:var(--accent)}
+.nickbar{margin:0 14px 10px;display:flex;gap:8px}
+.nickinput{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--text);outline:none;transition:border-color .2s;font-family:inherit}
+.nickinput:focus{border-color:var(--accent)}
+.nicksave{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.nicksave:active{transform:scale(.95)}
+.trstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 14px 10px}
+.tr-grid{display:flex;flex-direction:column;gap:10px;padding:0 14px 10px}
+.carcard{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .3s}
+.carcard.occ{border-color:rgba(231,76,60,.4)}
+.carcard.free{border-color:rgba(46,204,113,.2)}
+.cartop{display:flex;align-items:center;gap:10px;padding:12px 14px 8px}
+.car-em{font-size:32px;flex-shrink:0}
+.car-info{flex:1;min-width:0}
+.car-name{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.car-code{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.5px;margin-top:1px}
+.car-badge{flex-shrink:0;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.bfree{background:var(--gbg);color:var(--green);border:1px solid var(--green)}
+.bocc{background:var(--rbg);color:var(--red);border:1px solid var(--red)}
+.carbot{padding:8px 14px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.car-who{font-size:12px;color:var(--text3);flex:1;min-width:0}
+.car-who b{color:var(--red);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.car-who .freetext{color:var(--green)}
+.car-actbtn{padding:8px 14px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all .2s}
+.car-actbtn:active{transform:scale(.95)}
+.btake{background:var(--green);color:#fff}
+.bfreecar{background:var(--red);color:#fff}
+.bother{background:var(--bg3);color:var(--text3);border:1px solid var(--border);cursor:not-allowed}
+/* ANALYTICS */
+.anlwrap{padding:14px;flex:1}
+.anlhdr{font-size:20px;font-weight:700;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.anlcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+.anlctitle{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.5px;margin-bottom:10px}
+.anlrow{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
+.anlrow:last-child{border-bottom:none}
+.anltn{font-size:13px;color:var(--text);font-weight:500}
+.anltc{font-size:16px;font-weight:700;color:var(--accent)}
+.anlbr{margin-bottom:9px}
+.anlblbl{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px}
+.anlbbg{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.anlbfill{height:100%;border-radius:4px;transition:width 1s ease}
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;color:var(--text);z-index:500;box-shadow:0 8px 30px var(--shadow);white-space:nowrap;animation:tin .3s ease-out}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.toast.hide{animation:tout .3s ease-in forwards}
+@keyframes tout{to{opacity:0;transform:translateX(-50%) translateY(16px)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TIMERS PAGE -->
+<div class="page active" id="page-timers">
+  <div class="hdr">
+    <div><div class="hdr-title">⏱ Таймеры</div><div class="hdr-sub">Отслеживай КД активностей</div></div>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+  </div>
+  <div class="nbar" onclick="toggleNotify()"><span id="nIcon">🔔</span><span id="nText">Уведомления включены ✓</span></div>
+  <div class="nhint">🚀 Уведомления придут даже если закроете приложение!</div>
+  <div class="stats-row">
+    <div class="scard"><div class="snum" id="statTotal">0</div><div class="slbl">Всего</div></div>
+    <div class="scard"><div class="snum" id="statActive" style="color:var(--accent)">0</div><div class="slbl">Активных</div></div>
+    <div class="scard"><div class="snum" id="statReady" style="color:var(--green)">0</div><div class="slbl">Готово</div></div>
+  </div>
+  <button class="add-btn" onclick="openAddModal()"><span>+</span> Добавить свой таймер</button>
+  <div class="drag-hint">⠿ Перетащите таймер за иконку для изменения порядка</div>
+  <div class="tgrid" id="timerGrid"></div>
+</div>
+
+<!-- CASINO PAGE -->
+<div class="page scrollp" id="page-casino">
+  <div class="casin-hdr"><span>🎰</span><div>Рулетка GTA RP<div class="casin-sub">Двойной зеро · Анализ · Обучение</div></div></div>
+  <div class="tut-bar" onclick="toggleTut()"><span>📖 Обучение рулетке</span><span id="tutArr">▼</span></div>
+  <div class="tut-block" id="tutBlock">
+    <div class="tut-intro">В GTA RP рулетка имеет <b>38 чисел</b>: 1–36, <b>0</b> и <b>00</b>. Два нуля увеличивают преимущество казино до ~5.26%.</div>
+    <div class="tut-grid">
+      <div class="titem"><div class="titem-icon">🔴⚫</div><div class="titem-name">Чёт/Нечет</div><div class="titem-odds">1:1 · 47.4%</div><div class="titem-desc">18 чисел из 38. Нули — проигрыш.</div></div>
+      <div class="titem"><div class="titem-icon">🎨</div><div class="titem-name">Красное/Чёрное</div><div class="titem-odds">1:1 · 47.4%</div><div class="titem-desc">18 красных или 18 чёрных из 38.</div></div>
+      <div class="titem"><div class="titem-icon">📊</div><div class="titem-name">Дюжина</div><div class="titem-odds">2:1 · 31.6%</div><div class="titem-desc">1–12, 13–24 или 25–36.</div></div>
+      <div class="titem"><div class="titem-icon">📋</div><div class="titem-name">Колонка</div><div class="titem-odds">2:1 · 31.6%</div><div class="titem-desc">Левая, средняя или правая.</div></div>
+      <div class="titem"><div class="titem-icon">½</div><div class="titem-name">Половина</div><div class="titem-odds">1:1 · 47.4%</div><div class="titem-desc">1–18 (малое) или 19–36 (большое).</div></div>
+      <div class="titem"><div class="titem-icon">🎯</div><div class="titem-name">Число напрямую</div><div class="titem-odds">35:1 · 2.6%</div><div class="titem-desc">Любое число 0–36 или 00.</div></div>
+    </div>
+    <div class="tut-tip">💡 <b>Совет:</b> Ставки 1:1 дают наибольшие шансы. Для больших выигрышей — дюжины 2:1.</div>
+  </div>
+  <div class="wheel-wrap">
+    <div class="wheel" id="wheel"><div style="text-align:center"><div class="wnum" id="wnum">—</div><div class="wlbl">последнее</div></div></div>
+    <div class="recnums" id="recNums"></div>
+  </div>
+  <div class="btype-lbl">ТИП СТАВКИ</div>
+  <div class="btype-scroll" id="btypeScroll"></div>
+  <div class="bopt-wrap" id="boptWrap"></div>
+  <div class="abets-hdr"><span>🎲 Мои ставки (макс. 3)</span><button class="clr-btn" onclick="clearBets()">Очистить</button></div>
+  <div class="abets" id="activeBets"><div class="nobet">Выбери ставки выше ↑</div></div>
+  <div class="cstats">
+    <div class="scard"><div class="snum" id="csTotal" style="color:var(--blue)">0</div><div class="slbl">Раундов</div></div>
+    <div class="scard"><div class="snum" id="csWins" style="color:var(--green)">0</div><div class="slbl">Побед</div></div>
+    <div class="scard"><div class="snum" id="csStreak">0</div><div class="slbl">Серия</div></div>
+  </div>
+  <div class="rhwrap"><div class="rhlbl">ВЫПАВШИЕ ЧИСЛА (последние 20)</div><div class="rhdots" id="rhDots"><div class="rhemp">Нет данных</div></div></div>
+  <div class="anblock"><div class="antitle">🧠 Анализ</div><div id="anContent"><div style="color:var(--text3);font-size:13px">Добавь минимум 3 результата</div></div></div>
+  <div style="padding:6px 14px 4px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.5px">ВВЕДИ ВЫПАВШЕЕ ЧИСЛО (37 = 00)</div>
+  <div class="numinput-wrap">
+    <input class="numinput" id="resNum" type="number" min="0" max="37" placeholder="0 – 37">
+    <button class="ar-btn arw" onclick="addRes()">✅ Добавить</button>
+    <button class="ar-btn ar0" onclick="resetCasino()">↺</button>
+  </div>
+  <div style="padding:2px 14px 14px;font-size:11px;color:var(--text3)">Для 00 введи число <b style="color:var(--text2)">37</b></div>
+</div>
+
+<!-- TRANSPORT PAGE -->
+<div class="page scrollp" id="page-transport">
+  <div class="tr-hdr">
+    <div><div class="tr-title">🚗 Транспорт фамы</div><div class="tr-sub">Управление парком автомобилей</div></div>
+    <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+  </div>
+  <div class="tr-hint">Введи своё имя и нажми <b>Занять</b> чтобы забронировать машину. Статус виден всем участникам фамы.</div>
+  <div class="nickbar">
+    <input class="nickinput" id="nickInput" placeholder="Твоё имя в игре...">
+    <button class="nicksave" onclick="saveNick()">Сохранить</button>
+  </div>
+  <div class="trstats">
+    <div class="scard"><div class="snum" id="trFree" style="color:var(--green)">0</div><div class="slbl">Свободно</div></div>
+    <div class="scard"><div class="snum" id="trOcc" style="color:var(--red)">0</div><div class="slbl">Занято</div></div>
+  </div>
+  <div class="tr-grid" id="trGrid"></div>
+</div>
+
+<!-- ANALYTICS PAGE -->
+<div class="page scrollp" id="page-analytics">
+  <div class="anlwrap">
+    <div class="anlhdr">📈 Аналитика</div>
+    <div class="anlcard"><div class="anlctitle">КОЛИЧЕСТВО ЗАПУСКОВ</div><div id="anlList"><div style="color:var(--text3);font-size:13px">Нет данных</div></div></div>
+    <div class="anlcard"><div class="anlctitle">ПОПУЛЯРНОСТЬ</div><div id="anlBars"><div style="color:var(--text3);font-size:13px">Нет данных</div></div></div>
+    <div class="anlcard">
+      <div class="anlctitle">ИТОГО</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="scard"><div class="snum" id="anlTotal" style="font-size:22px">0</div><div class="slbl">Запусков</div></div>
+        <div class="scard"><div class="snum" id="anlFav" style="font-size:12px;color:var(--accent);line-height:1.3">—</div><div class="slbl">Любимый</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <div class="nitem active" onclick="switchPage('timers',this)"><div class="nicon">⏱</div><div>Таймеры</div></div>
+  <div class="nitem" onclick="switchPage('casino',this)"><div class="nicon">🎰</div><div>Казино</div></div>
+  <div class="nitem" onclick="switchPage('transport',this)"><div class="nicon">🚗</div><div>Транспорт</div></div>
+  <div class="nitem" onclick="switchPage('analytics',this)"><div class="nicon">📊</div><div>Аналитика</div></div>
+</div>
+
+<!-- ADD TIMER MODAL -->
+<div class="moverlay" id="addModal" onclick="closeAdd(event)">
+  <div class="modal">
+    <div class="mtitle">➕ Новый таймер</div>
+    <div class="plabel">БЫСТРЫЙ ВЫБОР</div>
+    <div class="pchips" id="pchips"></div>
+    <input class="minput" id="tName" placeholder="Название таймера" maxlength="22">
+    <input class="minput" id="tDur" placeholder="Время в минутах (напр. 30)" type="number" min="1" max="600">
+    <div class="mbtns">
+      <button class="mbtn mbc" onclick="closeAdd()">Отмена</button>
+      <button class="mbtn mbo" onclick="addTimer()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="moverlay" id="confModal" onclick="closeConf(event)">
+  <div class="modal">
+    <div class="mtitle">⏰ Таймер завершён!</div>
+    <div class="cbody">
+      <p>Таймер <span class="cname-hl" id="confName"></span> готов!<br>Запустить снова?</p>
+      <div class="mbtns">
+        <button class="mbtn mbc" onclick="confAnswer(false)">Нет, спасибо</button>
+        <button class="mbtn mbo" onclick="confAnswer(true)">▶ Продолжаем!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ INIT TG ============
+(function(){
+  try {
+    if(window.Telegram && window.Telegram.WebApp){
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    }
+  } catch(e){}
+})();
+
+// ============ SAFE STORAGE ============
+var mem = {};
+function sGet(k){ try{ var v=localStorage.getItem(k); return v; }catch(e){ return mem[k]||null; } }
+function sSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){ mem[k]=v; } }
+
+// ============ STATE ============
+var timers = [];
+var nextId = 1;
+var confTarget = null;
+var notifyOn = true;
+var myNick = sGet('fama_nick') || '';
+
+// ============ CARS ============
+var CARS = [
+  {id:'ASTART00', name:'Vapid Predator (3702)', em:'🛻'},
+  {id:'ASTART01', name:'Vapid Predator (3750)', em:'🛻'},
+  {id:'ASTART02', name:'Karin Vivanite (4283)', em:'🚙'},
+  {id:'ASTART03', name:'Benefactor G-series 63 ASG 6x6 (4528)', em:'🪖'},
+  {id:'ASTART04', name:'Benefactor JLS 63 X166 (4595)', em:'🚙'},
+  {id:'ASTART05', name:'Benefactor JLE 63 Hayman C292 (4764)', em:'🏎'},
+  {id:'ASTART06', name:'Karin Grand Cruiser 300 2022 (5030)', em:'🚙'},
+  {id:'ASTART07', name:'Karin Thunder 2021 (5031)', em:'🛻'},
+  {id:'ASTART08', name:'Benefactor M-Bach S-series 560 W222 (5095)', em:'🚗'},
+  {id:'ASTART09', name:'Maibatsu Montero Revolution 1997 (5270)', em:'🚙'},
+  {id:'ASTART10', name:'Enus Callinon (5396)', em:'🚗'},
+  {id:'ASTART11', name:'Truffade Shiron (5406)', em:'🏎'},
+  {id:'ASTART12', name:'Truffade Vivo 2020 (5518)', em:'🏎'},
+];
+
+function getTrState(){ try{ var d=sGet('fama_tr'); return d?JSON.parse(d):{}; }catch(e){ return {}; } }
+function setTrState(s){ sSet('fama_tr', JSON.stringify(s)); }
+
+// ============ PRESETS ============
+var PRESETS = [
+  {name:'📦 Почта', sec:600},
+  {name:'🚫 Контрабанда', sec:300},
+  {name:'🏦 Ограбление', sec:1800},
+  {name:'⚒ Шахта', sec:1200},
+  {name:'🚕 Такси', sec:1500},
+  {name:'🚔 Тюрьма', sec:900},
+  {name:'🚗 Аренда авто', sec:3600},
+  {name:'❄️ Кулдаун', sec:600},
+  {name:'🎯 Автоугон', sec:2400},
+  {name:'👤 Сутенерка', sec:1200},
+  {name:'💊 Аптека', sec:720},
+  {name:'🌿 Зелень', sec:2100},
+  {name:'🏗 Стройка', sec:1200},
+  {name:'🐾 Дрессировка', sec:930},
+  {name:'🤠 Реднеки', sec:7200},
+];
+
+// ============ THEME / NOTIFY ============
+function toggleTheme(){
+  var h=document.documentElement;
+  var dark=h.dataset.theme==='dark';
+  h.dataset.theme=dark?'light':'dark';
+  document.querySelectorAll('.theme-btn').forEach(function(b){b.textContent=dark?'☀️':'🌙';});
+}
+function toggleNotify(){
+  notifyOn=!notifyOn;
+  document.getElementById('nIcon').textContent=notifyOn?'🔔':'🔕';
+  document.getElementById('nText').textContent=notifyOn?'Уведомления включены ✓':'Уведомления отключены';
+}
+
+// ============ PAGES ============
+function switchPage(name, el){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nitem').forEach(function(n){n.classList.remove('active');});
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='analytics') renderAnl();
+  if(name==='transport') renderTr();
+}
+
+// ============ TIMER MODAL ============
+function openAddModal(){
+  var wrap=document.getElementById('pchips');
+  wrap.innerHTML='';
+  PRESETS.forEach(function(p){
+    var c=document.createElement('div');
+    c.className='pchip';
+    var mins=Math.floor(p.sec/60);
+    var secs=p.sec%60;
+    c.textContent=p.name+' '+(secs>0?mins+'м'+secs+'с':mins+'м');
+    c.onclick=function(){
+      document.querySelectorAll('.pchip').forEach(function(x){x.classList.remove('sel');});
+      c.classList.add('sel');
+      document.getElementById('tName').value=p.name;
+      document.getElementById('tDur').value=p.sec/60;
+    };
+    wrap.appendChild(c);
+  });
+  document.getElementById('tName').value='';
+  document.getElementById('tDur').value='';
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(function(){document.getElementById('tName').focus();},350);
+}
+function closeAdd(e){
+  if(!e||e.target===document.getElementById('addModal'))
+    document.getElementById('addModal').classList.remove('open');
+}
+
+// ============ ADD TIMER ============
+function addTimer(){
+  var name=document.getElementById('tName').value.trim()||'Таймер';
+  var dur=parseFloat(document.getElementById('tDur').value)||10;
+  if(dur<0.1||dur>600){showToast('❌ Время от 0.1 до 600 мин');return;}
+  var sec=Math.round(dur*60);
+  timers.push({id:nextId++,name:name,durSec:sec,remSec:sec,status:'idle',itvId:null,count:0});
+  closeAdd();
+  renderTimers();
+  updateStats();
+  showToast('✅ "'+name+'" создан!');
+}
+
+// ============ TIMER CONTROL ============
+function startTimer(id){
+  var t=findT(id);
+  if(!t)return;
+  if(t.status==='ready'){t.remSec=t.durSec;t.status='idle';}
+  if(t.status!=='idle'&&t.status!=='paused')return;
+  t.status='running';
+  t.count++;
+  clearInterval(t.itvId);
+  t.itvId=setInterval(function(){tick(id);},1000);
+  renderTimers();
+  updateStats();
+  showToast('▶ '+t.name+' запущен');
+}
+function pauseTimer(id){
+  var t=findT(id);
+  if(!t||t.status!=='running')return;
+  clearInterval(t.itvId);
+  t.status='paused';
+  renderTimers();
+  updateStats();
+}
+function resetTimer(id){
+  var t=findT(id);
+  if(!t)return;
+  clearInterval(t.itvId);
+  t.remSec=t.durSec;
+  t.status='idle';
+  renderTimers();
+  updateStats();
+}
+function tick(id){
+  var t=findT(id);
+  if(!t)return;
+  t.remSec--;
+  if(t.remSec<=0){
+    t.remSec=0;
+    clearInterval(t.itvId);
+    t.status='ready';
+    renderTimers();
+    updateStats();
+    fireReady(t);
+  } else {
+    var el=document.getElementById('ct'+id);
+    var ep=document.getElementById('cp'+id);
+    if(el)el.textContent=fmt(t.remSec);
+    if(ep)ep.style.width=((t.durSec-t.remSec)/t.durSec*100).toFixed(1)+'%';
+  }
+}
+function fireReady(t){
+  // 1. Play sound
+  playBeep();
+
+  // 2. Browser notification
+  try{
+    if(notifyOn&&'Notification'in window&&Notification.permission==='granted')
+      new Notification('✅ '+t.name,{body:'Таймер завершён! Продолжаем?',icon:'https://dancing-torte-cfb84b.netlify.app/icon.png'});
+  }catch(e){}
+
+  // 3. Vibrate (mobile)
+  try{ if(navigator.vibrate) navigator.vibrate([200,100,200,100,400]); }catch(e){}
+
+  // 4. Show confirm modal
+  confTarget=t;
+  document.getElementById('confName').textContent=t.name;
+  document.getElementById('confModal').classList.add('open');
+}
+function confAnswer(yes){
+  document.getElementById('confModal').classList.remove('open');
+  if(yes&&confTarget)startTimer(confTarget.id);
+  confTarget=null;
+}
+function closeConf(e){
+  if(e&&e.target===document.getElementById('confModal'))
+    document.getElementById('confModal').classList.remove('open');
+}
+function findT(id){return timers.filter(function(t){return t.id===id;})[0]||null;}
+
+// ============ FORMAT ============
+function fmt(s){
+  var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  if(h>0)return h+':'+pad(m)+':'+pad(sec);
+  return pad(m)+':'+pad(sec);
+}
+function pad(n){return n<10?'0'+n:String(n);}
+
+// ============ RENDER TIMERS ============
+function renderTimers(){
+  var g=document.getElementById('timerGrid');
+  if(!timers.length){
+    g.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px 0;color:var(--text3);font-size:13px">Нет таймеров.<br>Нажми «+ Добавить»</div>';
+    return;
+  }
+  var html='';
+  timers.forEach(function(t){
+    var pct=((t.durSec-t.remSec)/t.durSec*100).toFixed(1);
+    var stCls='',stTxt='',timeCls='',barCls='';
+    if(t.status==='ready'){stCls='sr';stTxt='✓ Готово';timeCls='tready';barCls='pfull';}
+    else if(t.status==='running'){stCls='srun';stTxt='● Идёт...';}
+    else if(t.status==='paused'){stCls='sp';stTxt='⏸ Пауза';}
+    var cardCls=t.status==='running'?'running':t.status==='ready'?'ready':'';
+    if(t.status==='running')timeCls='tr';
+    var btn=t.status==='running'
+      ?'<button class="cbtn btn-pause" onclick="pauseTimer('+t.id+')">⏸ Пауза</button>'
+      :'<button class="cbtn btn-go" onclick="startTimer('+t.id+')">▶ Старт</button>';
+    html+='<div class="tcard '+cardCls+'">'
+      +'<div class="cdrag">⠿</div>'
+      +'<div class="cname">'+t.name+'</div>'
+      +(stTxt?'<div class="cstatus '+stCls+'">'+stTxt+'</div>':'<div style="height:14px"></div>')
+      +'<div class="ctime '+timeCls+'" id="ct'+t.id+'">'+(t.status==='ready'?'0:00':fmt(t.remSec))+'</div>'
+      +'<div class="pbar-bg"><div class="pbar '+barCls+'" id="cp'+t.id+'" style="width:'+(t.status==='ready'?100:pct)+'%"></div></div>'
+      +'<div class="cbtns">'+btn+'<button class="cbtn btn-reset" onclick="resetTimer('+t.id+')">↺</button></div>'
+      +'<div class="ccount">Запущен: '+t.count+' раз</div>'
+      +'</div>';
+  });
+  g.innerHTML=html;
+}
+
+// ============ STATS ============
+function updateStats(){
+  document.getElementById('statTotal').textContent=timers.length;
+  document.getElementById('statActive').textContent=timers.filter(function(t){return t.status==='running';}).length;
+  document.getElementById('statReady').textContent=timers.filter(function(t){return t.status==='ready';}).length;
+}
+
+// ============ ANALYTICS ============
+function renderAnl(){
+  var s=timers.slice().sort(function(a,b){return b.count-a.count;});
+  var max=s.reduce(function(m,t){return Math.max(m,t.count);},1);
+  var tot=s.reduce(function(x,t){return x+t.count;},0);
+  var colors=['var(--accent)','var(--green)','var(--blue)','var(--purple)','var(--red)'];
+  document.getElementById('anlList').innerHTML=s.length
+    ?s.map(function(t){return '<div class="anlrow"><div class="anltn">'+t.name+'</div><div class="anltc">'+t.count+'×</div></div>';}).join('')
+    :'<div style="color:var(--text3);font-size:13px">Нет данных</div>';
+  document.getElementById('anlBars').innerHTML=s.length
+    ?s.map(function(t,i){return '<div class="anlbr"><div class="anlblbl"><span>'+t.name+'</span><span>'+t.count+' раз</span></div><div class="anlbbg"><div class="anlbfill" style="width:'+Math.round(t.count/max*100)+'%;background:'+colors[i%colors.length]+'"></div></div></div>';}).join('')
+    :'<div style="color:var(--text3);font-size:13px">Нет данных</div>';
+  document.getElementById('anlTotal').textContent=tot;
+  document.getElementById('anlFav').textContent=s.length&&s[0].count>0?s[0].name:'—';
+}
+
+// ============ TRANSPORT (синхронизация через бота) ============
+var trState = {};
+var myUserId = 0;
+(function(){
+  try {
+    if(window.Telegram&&window.Telegram.WebApp&&window.Telegram.WebApp.initDataUnsafe){
+      var u=window.Telegram.WebApp.initDataUnsafe.user;
+      if(u){myUserId=u.id;}
+    }
+  } catch(e){}
+})();
+
+function saveNick(){
+  var v=document.getElementById('nickInput').value.trim();
+  if(!v){showToast('❌ Введи имя');return;}
+  myNick=v;sSet('fama_nick',v);showToast('✅ Имя: '+v);
+}
+
+function sendToBot(data){
+  try{
+    if(window.Telegram&&window.Telegram.WebApp){
+      window.Telegram.WebApp.sendData(JSON.stringify(data));
+    } else {
+      // Локальный fallback для тестирования в браузере
+      var s=getTrState();
+      if(data.type==='take_car'){s[data.car_id]={by:myNick||'Я',uid:0};setTrState(s);}
+      else if(data.type==='free_car'){delete s[data.car_id];setTrState(s);}
+      trState=getTrState();
+      renderTr();
+    }
+  }catch(e){showToast('❌ '+e.message);}
+}
+
+function getTrState(){try{var d=sGet('fama_tr');return d?JSON.parse(d):{};}catch(e){return {};}}
+function setTrState(s){sSet('fama_tr',JSON.stringify(s));}
+
+// Получаем ответ от бота
+if(window.Telegram&&window.Telegram.WebApp){
+  try{
+    window.Telegram.WebApp.onEvent('message',function(msg){
+      try{
+        var data=JSON.parse(typeof msg==='string'?msg:(msg.text||'{}'));
+        if(data.type==='transport_state'){
+          trState=data.state||{};
+          renderTr();
+          if(data.action==='taken')showToast('🚗 Машина занята!');
+          if(data.action==='freed')showToast('✅ Машина освобождена!');
+        }
+        if(data.type==='transport_error'){
+          if(data.reason==='occupied')showToast('❌ Уже занята: '+(data.by||''));
+          if(data.reason==='not_yours')showToast('❌ Это не твоя машина!');
+          // Откатываем оптимистичное обновление
+          trState=data.serverState||trState;
+          renderTr();
+        }
+      }catch(e){}
+    });
+  }catch(e){}
+}
+
+function takeCar(carId){
+  if(!myNick){showToast('⚠️ Введи своё имя!');return;}
+  var car=CARS.filter(function(c){return c.id===carId;})[0];
+  if(!car)return;
+  trState[carId]={by:myNick,uid:myUserId};
+  renderTr();
+  showToast('🚗 Занимаю...');
+  sendToBot({type:'take_car',car_id:carId,car_name:car.name});
+}
+
+function freeCar(carId){
+  delete trState[carId];
+  renderTr();
+  showToast('🔓 Освобождаю...');
+  sendToBot({type:'free_car',car_id:carId});
+}
+
+function loadTransport(){
+  if(window.Telegram&&window.Telegram.WebApp){
+    sendToBot({type:'get_transport'});
+  } else {
+    trState=getTrState();
+    renderTr();
+  }
+}
+
+function renderTr(){
+  var free=CARS.filter(function(c){return !trState[c.id];}).length;
+  document.getElementById('trFree').textContent=free;
+  document.getElementById('trOcc').textContent=CARS.length-free;
+  var grid=document.getElementById('trGrid');
+  grid.innerHTML='';
+  CARS.forEach(function(car){
+    var occ=trState[car.id];
+    var isMe=occ&&(occ.uid===myUserId||(myUserId===0&&occ.by===myNick));
+    var div=document.createElement('div');
+    div.className='carcard '+(occ?'occ':'free');
+    var btnEl=document.createElement('button');
+    if(!occ){
+      btnEl.className='car-actbtn btake';
+      btnEl.textContent='🔑 Занять';
+      btnEl.onclick=(function(id){return function(){takeCar(id);};})(car.id);
+    } else if(isMe){
+      btnEl.className='car-actbtn bfreecar';
+      btnEl.textContent='🔓 Освободить';
+      btnEl.onclick=(function(id){return function(){freeCar(id);};})(car.id);
+    } else {
+      btnEl.className='car-actbtn bother';
+      btnEl.textContent='🔒 Занято';
+      btnEl.disabled=true;
+    }
+    var whoTxt=occ
+      ?'<div class="car-who">Занял: <b>'+occ.by+'</b></div>'
+      :'<div class="car-who"><span class="freetext">✓ Свободна</span></div>';
+    div.innerHTML='<div class="cartop">'
+      +'<div class="car-em">'+car.em+'</div>'
+      +'<div class="car-info"><div class="car-name">'+car.name+'</div><div class="car-code">'+car.id+'</div></div>'
+      +'<div class="car-badge '+(occ?'bocc':'bfree')+'">'+(occ?'🔴 Занята':'🟢 Свободна')+'</div>'
+      +'</div>'
+      +'<div class="carbot">'+whoTxt+'</div>';
+    div.querySelector('.carbot').appendChild(btnEl);
+    grid.appendChild(div);
+  });
+  var refreshBtn=document.createElement('button');
+  refreshBtn.className='add-btn';
+  refreshBtn.style.margin='10px 0 0';
+  refreshBtn.textContent='🔄 Обновить статус';
+  refreshBtn.onclick=loadTransport;
+  grid.appendChild(refreshBtn);
+}
+
+// ============ CASINO ============
+var RED_NUMS={1:1,3:1,5:1,7:1,9:1,12:1,14:1,16:1,18:1,19:1,21:1,23:1,25:1,27:1,30:1,32:1,34:1,36:1};
+var BET_TYPES=[
+  {id:'even',label:'Чёт/Нечет',opts:[{v:'even',l:'Чёт'},{v:'odd',l:'Нечет'}]},
+  {id:'color',label:'Цвет',opts:[{v:'red',l:'🔴 Красное'},{v:'black',l:'⚫ Чёрное'}]},
+  {id:'dozen',label:'Дюжина',opts:[{v:'d1',l:'1–12'},{v:'d2',l:'13–24'},{v:'d3',l:'25–36'}]},
+  {id:'column',label:'Колонка',opts:[{v:'c1',l:'1-я колонка'},{v:'c2',l:'2-я колонка'},{v:'c3',l:'3-я колонка'}]},
+  {id:'half',label:'Половина',opts:[{v:'low',l:'1–18'},{v:'high',l:'19–36'}]},
+  {id:'number',label:'Число',opts:'numbers'},
+];
+var BET_ODDS=['1:1','1:1','2:1','2:1','1:1','35:1'];
+var casinoHistory=[];
+var casinoStreak=0;
+var currentBets=[];
+var currentBetType=0;
+
+function numColor(n){if(n===0||n===37)return'g';return RED_NUMS[n]?'r':'b';}
+function checkWin(bet,num){
+  var type=bet.type,val=bet.val;
+  if(num===0||num===37) return type==='number'&&(val===0||val===37);
+  if(type==='even') return val==='even'?num%2===0:num%2===1;
+  if(type==='color') return val==='red'?!!RED_NUMS[num]:!RED_NUMS[num];
+  if(type==='dozen') return val==='d1'?num<=12:val==='d2'?num<=24:num<=36;
+  if(type==='column') return val==='c1'?num%3===1:val==='c2'?num%3===2:num%3===0;
+  if(type==='half') return val==='low'?num<=18:num>=19;
+  if(type==='number') return val===num;
+  return false;
+}
+
+function initCasinoUI(){
+  var scroll=document.getElementById('btypeScroll');
+  scroll.innerHTML='';
+  BET_TYPES.forEach(function(bt,i){
+    var el=document.createElement('div');
+    el.className='btchip'+(i===0?' sel':'');
+    el.innerHTML=bt.label+'<span>'+BET_ODDS[i]+'</span>';
+    el.onclick=(function(idx,elem){
+      return function(){
+        document.querySelectorAll('.btchip').forEach(function(c){c.classList.remove('sel');});
+        elem.classList.add('sel');
+        currentBetType=idx;
+        renderBetOpts();
+      };
+    })(i,el);
+    scroll.appendChild(el);
+  });
+  renderBetOpts();
+}
+
+function renderBetOpts(){
+  var wrap=document.getElementById('boptWrap');
+  var bt=BET_TYPES[currentBetType];
+  if(bt.opts==='numbers'){
+    var html='<div class="ngrid">'
+      +'<button class="ngbtn ng0" onclick="addBet(0,\'0\',\'Число: 0\')">0</button>'
+      +'<button class="ngbtn ng0" onclick="addBet(37,\'00\',\'Число: 00\')">00</button>';
+    for(var i=1;i<=36;i++){
+      var cls=RED_NUMS[i]?'ngr':'ngb';
+      html+='<button class="ngbtn '+cls+'" onclick="addBet('+i+','+i+',\'Число: '+i+'\')">' +i+'</button>';
+    }
+    html+='</div>';
+    wrap.innerHTML=html;
+  } else {
+    var html2='<div class="bopt-row">';
+    bt.opts.forEach(function(o){
+      html2+='<button class="bopt-btn" onclick="addBet(\''+o.v+'\',\''+o.v+'\',\''+bt.label+': '+o.l+'\')">'+o.l+'</button>';
+    });
+    html2+='</div>';
+    wrap.innerHTML=html2;
+  }
+}
+
+function addBet(val,rawVal,label){
+  if(currentBets.length>=3){showToast('❌ Максимум 3 ставки');return;}
+  var type=BET_TYPES[currentBetType].id;
+  for(var i=0;i<currentBets.length;i++){
+    if(currentBets[i].type===type&&currentBets[i].val===val){showToast('⚠️ Такая ставка уже есть');return;}
+  }
+  currentBets.push({type:type,val:val,label:label});
+  renderActiveBets();
+  showToast('✅ '+label);
+}
+
+function removeBet(idx){currentBets.splice(idx,1);renderActiveBets();}
+function clearBets(){currentBets=[];renderActiveBets();}
+function renderActiveBets(){
+  var wrap=document.getElementById('activeBets');
+  if(!currentBets.length){wrap.innerHTML='<div class="nobet">Выбери ставки выше ↑</div>';return;}
+  wrap.innerHTML=currentBets.map(function(b,i){
+    return '<div class="abet-item"><span class="abet-lbl">'+b.label+'</span><button class="abet-rm" onclick="removeBet('+i+')">✕</button></div>';
+  }).join('');
+}
+
+function addRes(){
+  var raw=document.getElementById('resNum').value.trim();
+  if(raw===''){showToast('❌ Введи число');return;}
+  var num=parseInt(raw);
+  if(isNaN(num)||num<0||num>37){showToast('❌ Число от 0 до 37');return;}
+  var wins=currentBets.filter(function(b){return checkWin(b,num);});
+  var won=wins.length>0;
+  casinoHistory.push({num:num,won:won,wins:wins.map(function(b){return b.label;})});
+  casinoStreak=won?(casinoStreak>0?casinoStreak+1:1):(casinoStreak<0?casinoStreak-1:-1);
+  var d=num===37?'00':String(num);
+  var wn=document.getElementById('wnum');
+  var wh=document.getElementById('wheel');
+  wn.textContent=d;
+  var col=numColor(num);
+  wn.style.color=col==='r'?'var(--red)':col==='g'?'var(--green)':'var(--text2)';
+  wh.classList.add('spin');
+  setTimeout(function(){wh.classList.remove('spin');},650);
+  document.getElementById('resNum').value='';
+  renderCasinoHistory();
+  updateCasinoStats();
+  updateAnalysis();
+  if(won)showToast('🎉 Победа! '+d+' — '+wins.map(function(b){return b.label;}).join(', '));
+  else showToast('❌ Выпало '+d+'. Проигрыш.');
+}
+
+function resetCasino(){
+  casinoHistory=[];casinoStreak=0;
+  document.getElementById('wnum').textContent='—';
+  document.getElementById('wnum').style.color='';
+  renderCasinoHistory();updateCasinoStats();updateAnalysis();
+  showToast('↺ История сброшена');
+}
+
+function renderCasinoHistory(){
+  var h=casinoHistory.slice(-20);
+  var rn=document.getElementById('recNums');
+  if(!h.length){
+    document.getElementById('rhDots').innerHTML='<div class="rhemp">Нет данных</div>';
+    if(rn)rn.innerHTML='';return;
+  }
+  document.getElementById('rhDots').innerHTML=h.map(function(x){
+    var d=x.num===37?'00':x.num;
+    var c=numColor(x.num);
+    var bg=c==='r'?'var(--red)':c==='g'?'var(--green)':'#444';
+    return '<div class="rhdot" style="background:'+bg+'" title="'+(x.won?'Победа':'Проигрыш')+'">'+d+'</div>';
+  }).join('');
+  if(rn){
+    rn.innerHTML=h.slice(-5).reverse().map(function(x){
+      var d=x.num===37?'00':x.num;
+      var c=numColor(x.num);
+      return '<div class="rnum r'+c+'">'+d+'</div>';
+    }).join('');
+  }
+}
+
+function updateCasinoStats(){
+  var tot=casinoHistory.length;
+  var wins=casinoHistory.filter(function(h){return h.won;}).length;
+  document.getElementById('csTotal').textContent=tot;
+  document.getElementById('csWins').textContent=wins;
+  var el=document.getElementById('csStreak');
+  el.textContent=(casinoStreak>0?'+':'')+casinoStreak;
+  el.style.color=casinoStreak>0?'var(--green)':casinoStreak<0?'var(--red)':'var(--text2)';
+}
+
+function updateAnalysis(){
+  var block=document.getElementById('anContent');
+  var h=casinoHistory;
+  if(h.length<3){block.innerHTML='<div style="color:var(--text3);font-size:13px">Добавь минимум 3 результата</div>';return;}
+  var last=h.slice(-20).map(function(x){return x.num;});
+  var cnt={red:0,black:0,green:0,even:0,odd:0,low:0,high:0,d1:0,d2:0,d3:0};
+  last.forEach(function(n){
+    if(n===0||n===37){cnt.green++;return;}
+    if(RED_NUMS[n])cnt.red++;else cnt.black++;
+    if(n%2===0)cnt.even++;else cnt.odd++;
+    if(n<=18)cnt.low++;else cnt.high++;
+    if(n<=12)cnt.d1++;else if(n<=24)cnt.d2++;else cnt.d3++;
+  });
+  var tot=last.length;
+  var p=function(v){return Math.round(v/tot*100);};
+  var recs=[
+    {l:'🔴 Красное',pct:p(cnt.red)},{l:'⚫ Чёрное',pct:p(cnt.black)},
+    {l:'Чёт',pct:p(cnt.even)},{l:'Нечет',pct:p(cnt.odd)},
+    {l:'1–18',pct:p(cnt.low)},{l:'19–36',pct:p(cnt.high)},
+    {l:'1я дюжина',pct:p(cnt.d1)},{l:'2я дюжина',pct:p(cnt.d2)},{l:'3я дюжина',pct:p(cnt.d3)},
+  ].sort(function(a,b){return b.pct-a.pct;});
+  var top=recs.slice(0,3);
+  var numFreq={};
+  last.forEach(function(n){numFreq[n]=(numFreq[n]||0)+1;});
+  var hot=Object.keys(numFreq).filter(function(k){return numFreq[k]>=2;}).sort(function(a,b){return numFreq[b]-numFreq[a];}).slice(0,5);
+  var allNums=[];
+  for(var i=0;i<=37;i++)allNums.push(i);
+  var cold=allNums.filter(function(n){return !numFreq[n];}).slice(0,8);
+  var s=casinoStreak;
+  var advice=h.length<5?'Мало данных. Продолжай вводить.':
+    s<=-3?'Серия '+Math.abs(s)+' проигрышей — попробуй '+top[0].l:
+    s>=3?'Серия '+s+' побед — ставка горячая 🔥':
+    cnt.green>=3?cnt.green+' нулей подряд — казино берёт своё':
+    top[0].l+' выпадает чаще ('+top[0].pct+'%). Теор. шанс ~47%';
+  var recCls=s<=-3?'rh':s>=3?'rw':'rc';
+  block.innerHTML=
+    '<div class="anstitle">🔥 Топ секторы (из '+tot+' чисел)</div>'
+    +top.map(function(r,i){
+      var cols=['var(--green)','var(--accent)','var(--blue)'];
+      return '<div class="carow"><div class="caname">'+['🥇','🥈','🥉'][i]+' '+r.l+'</div>'
+        +'<div class="cabar-bg"><div class="cabar" style="width:'+r.pct+'%;background:'+cols[i]+'"></div></div>'
+        +'<div class="capct" style="color:'+cols[i]+'">'+r.pct+'%</div></div>';
+    }).join('')
+    +'<div class="divider"></div>'
+    +'<div class="anstitle">🔥 Горячие числа</div>'
+    +'<div style="margin-bottom:10px">'
+    +(hot.length?hot.map(function(k){
+      var n=parseInt(k);var d=n===37?'00':n;
+      var c=numColor(n);
+      var bg=c==='r'?'var(--red)':c==='g'?'var(--green)':'#444';
+      return '<div class="hotnum" style="background:'+bg+'">'+d+' ×'+numFreq[k]+'</div>';
+    }).join(''):'<span style="color:var(--text3);font-size:12px">Недостаточно</span>')
+    +'</div>'
+    +'<div class="anstitle">❄️ Холодные числа</div>'
+    +'<div style="margin-bottom:10px">'
+    +cold.map(function(n){
+      var d=n===37?'00':n;
+      var c=numColor(n);
+      var clr=c==='r'?'var(--red)':c==='g'?'var(--green)':'var(--text3)';
+      return '<div class="coldnum" style="border-color:'+clr+';color:'+clr+'">'+d+'</div>';
+    }).join('')
+    +'</div>'
+    +'<div class="divider"></div>'
+    +'<div class="recbox '+recCls+'">'
+    +'<div style="font-size:22px">'+(s<=-3?'🔄':s>=3?'🔥':'💡')+'</div>'
+    +'<div>'
+    +'<div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase">Совет</div>'
+    +'<div style="font-size:16px;font-weight:700;color:var(--text)">'+top[0].l+'</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-top:2px">'+advice+'</div>'
+    +'</div></div>';
+}
+
+function toggleTut(){
+  var b=document.getElementById('tutBlock');
+  var a=document.getElementById('tutArr');
+  var open=b.style.display==='none'||b.style.display==='';
+  b.style.display=open?'block':'none';
+  a.textContent=open?'▲':'▼';
+}
+
+// ============ TOAST ============
+function showToast(msg){
+  var old=document.querySelector('.toast');
+  if(old)old.remove();
+  var t=document.createElement('div');
+  t.className='toast';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.classList.add('hide');setTimeout(function(){t.remove();},300);},2500);
+}
+
+
+// ============ SOUND ============
+function playBeep(){
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var master = ctx.createGain();
+    master.gain.value = 1.5; // MAX volume
+    master.connect(ctx.destination);
+    // 5 loud ascending beeps
+    [0, 0.3, 0.6, 0.9, 1.1].forEach(function(delay, i) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(master);
+      osc.frequency.value = 600 + i * 120; // ascending pitch
+      osc.type = 'square'; // square wave = louder/harsher
+      gain.gain.setValueAtTime(1.0, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.28);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.3);
+    });
+  } catch(e) {}
+}
+
+// ============ BOT NOTIFICATION ============
+// Sends message to user via bot when timer finishes
+var BOT_TOKEN = '';  // filled from TG WebApp data
+var USER_CHAT_ID = '';
+
+function initBotNotif() {
+  try {
+    if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+      var data = window.Telegram.WebApp.initDataUnsafe;
+      if(data && data.user && data.user.id) {
+        USER_CHAT_ID = String(data.user.id);
+      }
+    }
+  } catch(e) {}
+}
+
+function sendBotMessage(timerName) {
+  // Uses the bot token stored in the app
+  // This requires the bot token - we use a proxy approach via bot webhook
+  // For now we use Telegram.WebApp.sendData to notify the bot
+  try {
+    if(window.Telegram && window.Telegram.WebApp && USER_CHAT_ID) {
+      // Send data to bot - bot.js will handle it and send notification back
+      window.Telegram.WebApp.sendData(JSON.stringify({
+        type: 'timer_done',
+        timer: timerName,
+        chat_id: USER_CHAT_ID
+      }));
+    }
+  } catch(e) {}
+}
+
+
+// ============ BOOT ============
+(function boot(){
+  try{
+    if('Notification'in window&&Notification.permission==='default')
+      Notification.requestPermission();
+  }catch(e){}
+  initBotNotif();
+
+  if(myNick){
+    var ni=document.getElementById('nickInput');
+    if(ni)ni.value=myNick;
+  }
+
+  var defaults=[
+    {name:'📦 Почта',sec:600},
+    {name:'🚫 Контрабанда',sec:300},
+    {name:'🎯 Организация',sec:7200},
+    {name:'🚗 Автоугон',sec:2400},
+    {name:'👤 Сутенерка',sec:1200},
+    {name:'🐾 Дрессировка',sec:930},
+    {name:'🤠 Реднеки',sec:7200},
+  ];
+  defaults.forEach(function(p){
+    timers.push({id:nextId++,name:p.name,durSec:p.sec,remSec:p.sec,status:'idle',itvId:null,count:0});
+  });
+
+  renderTimers();
+  updateStats();
+  initCasinoUI();
+  renderTr();
+  setInterval(renderTr,5000);
+})();
+</script>
+</body>
+</html>
