@@ -533,6 +533,8 @@ function addTimer(){
   closeAdd();
   renderTimers();
   updateStats();
+  // Загружаем серверные таймеры если есть userId
+  if(myUserId) loadServerTimers();
   showToast('✅ "'+name+'" создан!');
 }
 
@@ -548,7 +550,25 @@ function startTimer(id){
   t.itvId=setInterval(function(){tick(id);},1000);
   renderTimers();
   updateStats();
+  // Загружаем серверные таймеры если есть userId
+  if(myUserId) loadServerTimers();
   showToast('▶ '+t.name+' запущен');
+  // Синхронизируем с сервером для уведомлений
+  syncTimerToServer(t);
+}
+
+function syncTimerToServer(t){
+  if(!myUserId) return;
+  fetch(API_URL + '/timer/start', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      user_id: myUserId,
+      chat_id: myUserId,
+      name: t.name,
+      duration_sec: t.remSec
+    })
+  }).catch(function(){});
 }
 function pauseTimer(id){
   var t=findT(id);
@@ -557,6 +577,8 @@ function pauseTimer(id){
   t.status='paused';
   renderTimers();
   updateStats();
+  // Загружаем серверные таймеры если есть userId
+  if(myUserId) loadServerTimers();
 }
 function resetTimer(id){
   var t=findT(id);
@@ -566,6 +588,8 @@ function resetTimer(id){
   t.status='idle';
   renderTimers();
   updateStats();
+  // Загружаем серверные таймеры если есть userId
+  if(myUserId) loadServerTimers();
 }
 function tick(id){
   var t=findT(id);
@@ -1332,6 +1356,36 @@ function renderChargeItem(list, ch, isAvailable) {
 }
 
 
+
+// Загружаем активные таймеры с сервера (синхронизация)
+function loadServerTimers(){
+  if(!myUserId) return;
+  fetch(API_URL + '/timer/list/' + myUserId)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!data.ok || !data.timers) return;
+      data.timers.forEach(function(st){
+        // Ищем локальный таймер с таким же именем
+        var local = timers.filter(function(t){ return t.name === st.name; })[0];
+        if(local && local.status === 'running') return; // уже тикает
+        if(st.remaining > 0){
+          if(local){
+            // Обновляем оставшееся время
+            local.remSec = st.remaining;
+            if(local.status !== 'running'){
+              local.status = 'running';
+              clearInterval(local.itvId);
+              local.itvId = setInterval(function(){ tick(local.id); }, 1000);
+            }
+          }
+        }
+      });
+      renderTimers();
+      updateStats();
+    })
+    .catch(function(){});
+}
+
 // ============ BOOT ============
 (function boot(){
   try{
@@ -1360,6 +1414,8 @@ function renderChargeItem(list, ch, isAvailable) {
 
   renderTimers();
   updateStats();
+  // Загружаем серверные таймеры если есть userId
+  if(myUserId) loadServerTimers();
   initCasinoUI();
   renderTr();
   setInterval(renderTr,5000);
