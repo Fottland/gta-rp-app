@@ -174,6 +174,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .arr{background:var(--rbg);color:var(--red);border:1px solid var(--red)}
 .arr:hover{background:var(--red);color:#fff}
 .ar0{background:var(--bg3);color:var(--text3);border:1px solid var(--border);width:42px;flex-shrink:0;font-size:16px;padding:0}
+
+/* CHARGE PAGE */
+.charge-hdr{padding:14px 14px 8px;font-size:20px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
+.charge-sub{font-size:12px;color:var(--text3);font-weight:400}
+.rank-selector{margin:0 14px 10px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+.rank-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.5px;margin-bottom:8px}
+.rank-btns{display:flex;flex-wrap:wrap;gap:6px}
+.rank-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .2s;font-family:inherit}
+.rank-btn.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+.rank-btn:active{transform:scale(.92)}
+.charge-list{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
+.charge-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;transition:all .3s}
+.charge-item.available{border-color:rgba(46,204,113,.3)}
+.charge-item.locked{opacity:.45}
+.charge-item.on-cd{border-color:rgba(245,166,35,.3)}
+.charge-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.charge-name{font-size:14px;font-weight:700;color:var(--text)}
+.charge-rank{font-size:11px;color:var(--text3);font-weight:500}
+.charge-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px}
+.charge-status.avail{background:var(--gbg);color:var(--green)}
+.charge-status.lock{background:var(--bg3);color:var(--text3)}
+.charge-status.cd{background:rgba(245,166,35,.15);color:var(--accent)}
+.charge-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.charge-cd-info{font-size:11px;color:var(--text3)}
+.charge-cd-info b{color:var(--text2)}
+.charge-take-btn{padding:7px 14px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.charge-take-btn:active{transform:scale(.95)}
+.charge-take-btn.btn-take-charge{background:var(--green);color:#fff}
+.charge-take-btn.btn-cd{background:var(--bg3);color:var(--text3);border:1px solid var(--border);cursor:not-allowed}
+.charge-timer{font-family:inherit;font-size:13px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.charge-pbar-bg{height:3px;background:var(--bg3);border-radius:2px;margin-top:6px;overflow:hidden}
+.charge-pbar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width 1s linear}
+.no-rank-msg{text-align:center;padding:30px 20px;color:var(--text3);font-size:14px}
+
 /* TRANSPORT */
 .tr-hdr{padding:14px 14px 8px;display:flex;align-items:center;justify-content:space-between}
 .tr-title{font-size:20px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:8px}
@@ -307,6 +341,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="tr-grid" id="trGrid"></div>
 </div>
 
+<!-- CHARGE PAGE -->
+<div class="page scrollp" id="page-charge">
+  <div class="charge-hdr"><span>🔫</span><div>Заряд<div class="charge-sub">Наборы оружия фамы</div></div></div>
+  <div class="rank-selector">
+    <div class="rank-label">ТВОЙ РАНГ</div>
+    <div class="rank-btns" id="rankBtns"></div>
+  </div>
+  <div class="charge-list" id="chargeList">
+    <div class="no-rank-msg">Выбери свой ранг выше ↑</div>
+  </div>
+</div>
+
 <!-- ANALYTICS PAGE -->
 <div class="page scrollp" id="page-analytics">
   <div class="anlwrap">
@@ -330,6 +376,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="nitem active" onclick="switchPage('timers',this)"><div class="nicon">⏱</div><div>Таймеры</div></div>
   <div class="nitem" onclick="switchPage('casino',this)"><div class="nicon">🎰</div><div>Казино</div></div>
   <div class="nitem" onclick="switchPage('transport',this)"><div class="nicon">🚗</div><div>Транспорт</div></div>
+  <div class="nitem" onclick="switchPage('charge',this)"><div class="nicon">🔫</div><div>Заряд</div></div>
   <div class="nitem" onclick="switchPage('analytics',this)"><div class="nicon">📊</div><div>Аналитика</div></div>
 </div>
 
@@ -445,6 +492,7 @@ function switchPage(name, el){
   el.classList.add('active');
   if(name==='analytics') renderAnl();
   if(name==='transport') loadTransport();
+  if(name==='charge'){ initRankBtns(); renderCharges(); }
 }
 
 // ============ TIMER MODAL ============
@@ -634,7 +682,7 @@ var trState = {};
 var myUserId = 0;
 var myUserName = '';
 // ЗАМЕНИ НА IP ТВОЕГО СЕРВЕРА:
-var API_URL = 'https://gtaTimer.chickenkiller.com';
+var API_URL = 'http://YOUR_SERVER_IP:3000';
 
 (function(){
   try {
@@ -1095,6 +1143,172 @@ function sendBotMessage(timerName) {
       }));
     }
   } catch(e) {}
+}
+
+
+
+// ============ CHARGE (Наборы оружия) ============
+// Только позиции с галочкой (enabled:true) с фото
+var CHARGES = [
+  {name:'Бронежилет №1',   minRank:1,  maxRank:14, cd:320,  enabled:true},
+  {name:'Патроны 7.62',    minRank:1,  maxRank:14, cd:1000, enabled:true},
+  {name:'Бронежилет №2',   minRank:3,  maxRank:12, cd:1000, enabled:true},
+  {name:'АК-47',           minRank:1,  maxRank:14, cd:1000, enabled:true},
+  {name:'Бронежилет №3',   minRank:4,  maxRank:14, cd:1000, enabled:true},
+  {name:'Бронежилет №4',   minRank:3,  maxRank:14, cd:1000, enabled:true},
+  {name:'Косяки',          minRank:4,  maxRank:12, cd:1000, enabled:true},
+  {name:'Бинты',           minRank:1,  maxRank:14, cd:1000, enabled:true},
+  {name:'Spunk',           minRank:3,  maxRank:14, cd:1000, enabled:true},
+  {name:'Запивка',         minRank:7,  maxRank:14, cd:10,   enabled:true},
+  {name:'12mm',            minRank:1,  maxRank:14, cd:10,   enabled:true},
+  {name:'7.62 №2',         minRank:7,  maxRank:12, cd:500,  enabled:true},
+  {name:'5.56',            minRank:7,  maxRank:14, cd:1000, enabled:true},
+  {name:'Compact rifle',   minRank:3,  maxRank:14, cd:600,  enabled:true},
+  {name:'бич пакетик',     minRank:1,  maxRank:14, cd:1000, enabled:true},
+  {name:'5.56 №2',         minRank:1,  maxRank:14, cd:1000, enabled:true},
+  // Выключены (Pump Shotgun, Война Семей, СПАНК ЗАПИВКА) — не показываем
+];
+
+var myRank = parseInt(sGet('my_rank') || '0');
+// КД хранится локально: { 'charge_name': endTimestamp }
+var chargeCds = {};
+try { chargeCds = JSON.parse(sGet('charge_cds') || '{}'); } catch(e) { chargeCds = {}; }
+var chargeIntervals = {};
+
+function saveChargeCds() { sSet('charge_cds', JSON.stringify(chargeCds)); }
+
+function initRankBtns() {
+  var wrap = document.getElementById('rankBtns');
+  wrap.innerHTML = '';
+  for (var i = 1; i <= 14; i++) {
+    var btn = document.createElement('button');
+    btn.className = 'rank-btn' + (myRank === i ? ' sel' : '');
+    btn.textContent = i;
+    btn.onclick = (function(rank) {
+      return function() {
+        myRank = rank;
+        sSet('my_rank', String(rank));
+        document.querySelectorAll('.rank-btn').forEach(function(b) { b.classList.remove('sel'); });
+        this.classList.add('sel');
+        renderCharges();
+      };
+    })(i);
+    wrap.appendChild(btn);
+  }
+}
+
+function takeCharge(name, cdMinutes) {
+  var endTime = Date.now() + cdMinutes * 60 * 1000;
+  chargeCds[name] = endTime;
+  saveChargeCds();
+  renderCharges();
+  showToast('✅ ' + name + ' взят! КД: ' + cdMinutes + ' мин');
+}
+
+function renderCharges() {
+  var list = document.getElementById('chargeList');
+  if (!myRank) {
+    list.innerHTML = '<div class="no-rank-msg">Выбери свой ранг выше ↑</div>';
+    return;
+  }
+
+  // Очищаем старые интервалы
+  Object.keys(chargeIntervals).forEach(function(k) { clearInterval(chargeIntervals[k]); });
+  chargeIntervals = {};
+
+  var available = CHARGES.filter(function(ch) { return myRank >= ch.minRank && myRank <= ch.maxRank; });
+  var locked = CHARGES.filter(function(ch) { return myRank < ch.minRank || myRank > ch.maxRank; });
+
+  list.innerHTML = '';
+
+  if (available.length) {
+    var hdr = document.createElement('div');
+    hdr.style.cssText = 'font-size:11px;font-weight:600;color:var(--green);letter-spacing:.5px;margin-bottom:4px;padding:0 2px';
+    hdr.textContent = '✅ ДОСТУПНО ДЛЯ РАНГА ' + myRank;
+    list.appendChild(hdr);
+  }
+
+  available.forEach(function(ch) { renderChargeItem(list, ch, true); });
+
+  if (locked.length) {
+    var hdr2 = document.createElement('div');
+    hdr2.style.cssText = 'font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.5px;margin:8px 0 4px;padding:0 2px';
+    hdr2.textContent = '🔒 НЕДОСТУПНО';
+    list.appendChild(hdr2);
+    locked.forEach(function(ch) { renderChargeItem(list, ch, false); });
+  }
+}
+
+function renderChargeItem(list, ch, isAvailable) {
+  var now = Date.now();
+  var endTime = chargeCds[ch.name] || 0;
+  var onCd = endTime > now;
+  var remaining = onCd ? Math.ceil((endTime - now) / 1000) : 0;
+
+  var div = document.createElement('div');
+  var cls = 'charge-item';
+  if (!isAvailable) cls += ' locked';
+  else if (onCd) cls += ' on-cd';
+  else cls += ' available';
+  div.className = cls;
+
+  var statusHtml = '';
+  if (!isAvailable) statusHtml = '<div class="charge-status lock">🔒 Недоступно</div>';
+  else if (onCd) statusHtml = '<div class="charge-status cd">⏳ КД</div>';
+  else statusHtml = '<div class="charge-status avail">✅ Готов</div>';
+
+  var btnHtml = '';
+  if (isAvailable && !onCd) {
+    btnHtml = '<button class="charge-take-btn btn-take-charge" data-name="' + ch.name + '" data-cd="' + ch.cd + '">Взять</button>';
+  } else if (isAvailable && onCd) {
+    btnHtml = '<div class="charge-timer" id="ct_' + ch.name.replace(/\s/g,'_') + '">' + fmt(remaining) + '</div>';
+  }
+
+  div.innerHTML =
+    '<div class="charge-top">' +
+      '<div>' +
+        '<div class="charge-name">' + ch.name + '</div>' +
+        '<div class="charge-rank">Ранг ' + ch.minRank + '–' + ch.maxRank + '</div>' +
+      '</div>' +
+      statusHtml +
+    '</div>' +
+    '<div class="charge-bottom">' +
+      '<div class="charge-cd-info">КД: <b>' + ch.cd + ' мин</b></div>' +
+      btnHtml +
+    '</div>' +
+    (onCd ? '<div class="charge-pbar-bg"><div class="charge-pbar" id="cp_' + ch.name.replace(/\s/g,'_') + '" style="width:' + Math.round((1 - remaining / (ch.cd*60)) * 100) + '%"></div></div>' : '');
+
+  list.appendChild(div);
+
+  // Bind take button
+  var btn = div.querySelector('.btn-take-charge');
+  if (btn) {
+    btn.onclick = function() {
+      takeCharge(this.getAttribute('data-name'), parseInt(this.getAttribute('data-cd')));
+    };
+  }
+
+  // Start countdown interval if on CD
+  if (isAvailable && onCd) {
+    var key = ch.name;
+    chargeIntervals[key] = setInterval(function() {
+      var rem = Math.ceil((chargeCds[key] - Date.now()) / 1000);
+      var el = document.getElementById('ct_' + key.replace(/\s/g,'_'));
+      var pb = document.getElementById('cp_' + key.replace(/\s/g,'_'));
+      if (rem <= 0) {
+        clearInterval(chargeIntervals[key]);
+        delete chargeIntervals[key];
+        delete chargeCds[key];
+        saveChargeCds();
+        renderCharges();
+        playBeep();
+        showToast('✅ ' + key + ' — КД закончился!');
+      } else {
+        if (el) el.textContent = fmt(rem);
+        if (pb) pb.style.width = Math.round((1 - rem / (chargeCds[key] - Date.now() + rem) * rem / 1) * 100) + '%';
+      }
+    }, 1000);
+  }
 }
 
 
