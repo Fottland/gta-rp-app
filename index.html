@@ -492,7 +492,7 @@ function switchPage(name, el){
   el.classList.add('active');
   if(name==='analytics') renderAnl();
   if(name==='transport') loadTransport();
-  if(name==='charge'){ initRankBtns(); renderCharges(); }
+  if(name==='charge'){ initRankBtns(); if(myRank) loadCharges(myRank, renderCharges); else renderCharges(); }
 }
 
 // ============ TIMER MODAL ============
@@ -1149,25 +1149,25 @@ function sendBotMessage(timerName) {
 
 // ============ CHARGE (Наборы оружия) ============
 // Только позиции с галочкой (enabled:true) с фото
-var CHARGES = [
-  {name:'Бронежилет №1',   minRank:1,  maxRank:14, cd:320,  enabled:true},
-  {name:'Патроны 7.62',    minRank:1,  maxRank:14, cd:1000, enabled:true},
-  {name:'Бронежилет №2',   minRank:3,  maxRank:12, cd:1000, enabled:true},
-  {name:'АК-47',           minRank:1,  maxRank:14, cd:1000, enabled:true},
-  {name:'Бронежилет №3',   minRank:4,  maxRank:14, cd:1000, enabled:true},
-  {name:'Бронежилет №4',   minRank:3,  maxRank:14, cd:1000, enabled:true},
-  {name:'Косяки',          minRank:4,  maxRank:12, cd:1000, enabled:true},
-  {name:'Бинты',           minRank:1,  maxRank:14, cd:1000, enabled:true},
-  {name:'Spunk',           minRank:3,  maxRank:14, cd:1000, enabled:true},
-  {name:'Запивка',         minRank:7,  maxRank:14, cd:10,   enabled:true},
-  {name:'12mm',            minRank:1,  maxRank:14, cd:10,   enabled:true},
-  {name:'7.62 №2',         minRank:7,  maxRank:12, cd:500,  enabled:true},
-  {name:'5.56',            minRank:7,  maxRank:14, cd:1000, enabled:true},
-  {name:'Compact rifle',   minRank:3,  maxRank:14, cd:600,  enabled:true},
-  {name:'бич пакетик',     minRank:1,  maxRank:14, cd:1000, enabled:true},
-  {name:'5.56 №2',         minRank:1,  maxRank:14, cd:1000, enabled:true},
-  // Выключены (Pump Shotgun, Война Семей, СПАНК ЗАПИВКА) — не показываем
-];
+var CHARGES = []; // Загружается с сервера
+var CHARGES_FALLBACK = [
+  {id:1,name:'Бронежилет №1',  min_rank:1,  max_rank:14, cd_minutes:320},
+  {id:2,name:'Патроны 7.62',   min_rank:1,  max_rank:14, cd_minutes:1000},
+  {id:3,name:'Бронежилет №2',  min_rank:3,  max_rank:12, cd_minutes:1000},
+  {id:4,name:'АК-47',          min_rank:1,  max_rank:14, cd_minutes:1000},
+  {id:5,name:'Бронежилет №3',  min_rank:4,  max_rank:14, cd_minutes:1000},
+  {id:6,name:'Бронежилет №4',  min_rank:3,  max_rank:14, cd_minutes:1000},
+  {id:7,name:'Косяки',         min_rank:4,  max_rank:12, cd_minutes:1000},
+  {id:8,name:'Бинты',          min_rank:1,  max_rank:14, cd_minutes:1000},
+  {id:9,name:'Spunk',          min_rank:3,  max_rank:14, cd_minutes:1000},
+  {id:10,name:'Запивка',       min_rank:7,  max_rank:14, cd_minutes:10},
+  {id:11,name:'12mm',          min_rank:1,  max_rank:14, cd_minutes:10},
+  {id:12,name:'7.62 №2',       min_rank:7,  max_rank:12, cd_minutes:500},
+  {id:13,name:'5.56',          min_rank:7,  max_rank:14, cd_minutes:1000},
+  {id:14,name:'Compact rifle', min_rank:3,  max_rank:14, cd_minutes:600},
+  {id:15,name:'бич пакетик',   min_rank:1,  max_rank:14, cd_minutes:1000},
+  {id:16,name:'5.56 №2',       min_rank:1,  max_rank:14, cd_minutes:1000},
+]
 
 var myRank = parseInt(sGet('my_rank') || '0');
 // КД хранится локально: { 'charge_name': endTimestamp }
@@ -1190,7 +1190,8 @@ function initRankBtns() {
         sSet('my_rank', String(rank));
         document.querySelectorAll('.rank-btn').forEach(function(b) { b.classList.remove('sel'); });
         this.classList.add('sel');
-        renderCharges();
+        document.getElementById('chargeList').innerHTML = '<div class="no-rank-msg">🔄 Загрузка...</div>';
+        loadCharges(rank, renderCharges);
       };
     })(i);
     wrap.appendChild(btn);
@@ -1205,6 +1206,23 @@ function takeCharge(name, cdMinutes) {
   showToast('✅ ' + name + ' взят! КД: ' + cdMinutes + ' мин');
 }
 
+function loadCharges(rank, callback) {
+  fetch(API_URL + '/charges/' + rank)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.ok && data.charges && data.charges.length){
+        CHARGES = data.charges;
+      } else {
+        CHARGES = CHARGES_FALLBACK.filter(function(ch){ return rank >= ch.min_rank && rank <= ch.max_rank; });
+      }
+      if(callback) callback();
+    })
+    .catch(function(){
+      CHARGES = CHARGES_FALLBACK;
+      if(callback) callback();
+    });
+}
+
 function renderCharges() {
   var list = document.getElementById('chargeList');
   if (!myRank) {
@@ -1216,8 +1234,8 @@ function renderCharges() {
   Object.keys(chargeIntervals).forEach(function(k) { clearInterval(chargeIntervals[k]); });
   chargeIntervals = {};
 
-  var available = CHARGES.filter(function(ch) { return myRank >= ch.minRank && myRank <= ch.maxRank; });
-  var locked = CHARGES.filter(function(ch) { return myRank < ch.minRank || myRank > ch.maxRank; });
+  var available = CHARGES.filter(function(ch) { return myRank >= (ch.min_rank||ch.minRank) && myRank <= (ch.max_rank||ch.maxRank); });
+  var locked = CHARGES.filter(function(ch) { return myRank < (ch.min_rank||ch.minRank) || myRank > (ch.max_rank||ch.maxRank); });
 
   list.innerHTML = '';
 
@@ -1240,10 +1258,12 @@ function renderCharges() {
 }
 
 function renderChargeItem(list, ch, isAvailable) {
+  var cdMins = ch.cd_minutes || ch.cd || 1000;
   var now = Date.now();
   var endTime = chargeCds[ch.name] || 0;
   var onCd = endTime > now;
   var remaining = onCd ? Math.ceil((endTime - now) / 1000) : 0;
+  var cdMinutes = cdMins;
 
   var div = document.createElement('div');
   var cls = 'charge-item';
@@ -1259,7 +1279,7 @@ function renderChargeItem(list, ch, isAvailable) {
 
   var btnHtml = '';
   if (isAvailable && !onCd) {
-    btnHtml = '<button class="charge-take-btn btn-take-charge" data-name="' + ch.name + '" data-cd="' + ch.cd + '">Взять</button>';
+    btnHtml = '<button class="charge-take-btn btn-take-charge" data-name="' + ch.name + '" data-cd="' + cdMins + '">Взять</button>';
   } else if (isAvailable && onCd) {
     btnHtml = '<div class="charge-timer" id="ct_' + ch.name.replace(/\s/g,'_') + '">' + fmt(remaining) + '</div>';
   }
@@ -1273,7 +1293,7 @@ function renderChargeItem(list, ch, isAvailable) {
       statusHtml +
     '</div>' +
     '<div class="charge-bottom">' +
-      '<div class="charge-cd-info">КД: <b>' + ch.cd + ' мин</b></div>' +
+      '<div class="charge-cd-info">КД: <b>' + cdMins + ' мин</b></div>' +
       btnHtml +
     '</div>' +
     (onCd ? '<div class="charge-pbar-bg"><div class="charge-pbar" id="cp_' + ch.name.replace(/\s/g,'_') + '" style="width:' + Math.round((1 - remaining / (ch.cd*60)) * 100) + '%"></div></div>' : '');
