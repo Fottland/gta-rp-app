@@ -472,6 +472,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     if(window.Telegram && window.Telegram.WebApp){
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
+      var u = window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
+      if(u){
+        myUserId = u.id;
+        myUserName = u.first_name + (u.username ? ' (@'+u.username+')' : '');
+      }
     }
   } catch(e){}
 })();
@@ -620,6 +625,7 @@ function startTimer(id){
 
 function syncTimerToServer(t){
   if(!myUserId) return;
+  var nick = myNick || myUserName || sGet('fama_nick') || 'Игрок';
   fetch(API_URL + '/timer/start', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
@@ -627,7 +633,8 @@ function syncTimerToServer(t){
       user_id: myUserId,
       chat_id: myUserId,
       name: t.name,
-      duration_sec: t.remSec
+      duration_sec: t.remSec,
+      user_name: nick
     })
   }).catch(function(){});
 }
@@ -1434,11 +1441,7 @@ function renderChargeItem(list, ch, isAvailable) {
 
 // Загружаем активные таймеры с сервера (синхронизация)
 function loadServerTimers(){
-  if(!myUserId){
-    // Пробуем снова через секунду — myUserId может ещё не загрузиться
-    setTimeout(loadServerTimers, 1000);
-    return;
-  }
+  if(!myUserId) return;
   fetch(API_URL + '/timer/list/' + myUserId)
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -1453,19 +1456,24 @@ function loadServerTimers(){
           // Синхронизируем время для running
           if(local.status === 'running') local.remSec = st.remaining;
         } else {
-          // Восстанавливаем таймер с сервера
-          var t = {
-            id: nextId++,
-            name: st.name,
-            durSec: st.duration,
-            remSec: st.remaining,
-            status: 'running',
-            itvId: null,
-            count: 1
-          };
-          timers.push(t);
-          t.itvId = setInterval(function(){ tick(t.id); }, 1000);
-          restored = true;
+          // Проверяем нет ли уже такого таймера (защита от дублей)
+          var exists = timers.filter(function(t){ return t.name === st.name; }).length > 0;
+          if(!exists && st.remaining > 0){
+            var restored_t = {
+              id: nextId++,
+              name: st.name,
+              durSec: st.duration,
+              remSec: st.remaining,
+              status: 'running',
+              itvId: null,
+              count: 1
+            };
+            timers.push(restored_t);
+            (function(t){
+              t.itvId = setInterval(function(){ tick(t.id); }, 1000);
+            })(restored_t);
+            restored = true;
+          }
         }
       });
       if(restored){
