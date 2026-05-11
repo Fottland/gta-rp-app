@@ -590,8 +590,10 @@ function addTimer(){
   closeAdd();
   renderTimers();
   updateStats();
-  // Загружаем серверные таймеры если есть userId
-  if(myUserId) loadServerTimers();
+  // Загружаем серверные таймеры сразу при открытии
+  loadServerTimers();
+  // Повторяем каждые 10 секунд для синхронизации
+  setInterval(loadServerTimers, 10000);
   showToast('✅ "'+name+'" создан!');
 }
 
@@ -607,8 +609,10 @@ function startTimer(id){
   t.itvId=setInterval(function(){tick(id);},1000);
   renderTimers();
   updateStats();
-  // Загружаем серверные таймеры если есть userId
-  if(myUserId) loadServerTimers();
+  // Загружаем серверные таймеры сразу при открытии
+  loadServerTimers();
+  // Повторяем каждые 10 секунд для синхронизации
+  setInterval(loadServerTimers, 10000);
   showToast('▶ '+t.name+' запущен');
   // Синхронизируем с сервером для уведомлений
   syncTimerToServer(t);
@@ -634,8 +638,10 @@ function pauseTimer(id){
   t.status='paused';
   renderTimers();
   updateStats();
-  // Загружаем серверные таймеры если есть userId
-  if(myUserId) loadServerTimers();
+  // Загружаем серверные таймеры сразу при открытии
+  loadServerTimers();
+  // Повторяем каждые 10 секунд для синхронизации
+  setInterval(loadServerTimers, 10000);
 }
 function resetTimer(id){
   var t=findT(id);
@@ -645,8 +651,10 @@ function resetTimer(id){
   t.status='idle';
   renderTimers();
   updateStats();
-  // Загружаем серверные таймеры если есть userId
-  if(myUserId) loadServerTimers();
+  // Загружаем серверные таймеры сразу при открытии
+  loadServerTimers();
+  // Повторяем каждые 10 секунд для синхронизации
+  setInterval(loadServerTimers, 10000);
 }
 function tick(id){
   var t=findT(id);
@@ -1426,7 +1434,11 @@ function renderChargeItem(list, ch, isAvailable) {
 
 // Загружаем активные таймеры с сервера (синхронизация)
 function loadServerTimers(){
-  if(!myUserId) return;
+  if(!myUserId){
+    // Пробуем снова через секунду — myUserId может ещё не загрузиться
+    setTimeout(loadServerTimers, 1000);
+    return;
+  }
   fetch(API_URL + '/timer/list/' + myUserId)
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -1562,8 +1574,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   renderTimers();
   updateStats();
-  // Загружаем серверные таймеры если есть userId
-  if(myUserId) loadServerTimers();
+  // Загружаем серверные таймеры сразу при открытии
+  loadServerTimers();
+  // Повторяем каждые 10 секунд для синхронизации
+  setInterval(loadServerTimers, 10000);
   initCasinoUI();
   renderTr();
   setInterval(renderTr,5000);
