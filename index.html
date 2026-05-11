@@ -1431,16 +1431,36 @@ function loadServerTimers(){
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(!data.ok || !data.timers) return;
+      var restored = false;
       data.timers.forEach(function(st){
+        if(st.remaining <= 0) return;
         var local = timers.filter(function(t){ return t.name === st.name; })[0];
-        // Не трогаем таймер если он на паузе или остановлен пользователем
-        if(local && (local.status === 'paused' || local.status === 'idle')) return;
-        // Обновляем только если таймер уже запущен или его нет локально
-        if(st.remaining > 0 && local && local.status === 'running'){
-          // Просто синхронизируем время — не перезапускаем
-          local.remSec = st.remaining;
+        if(local){
+          // Не трогаем если на паузе
+          if(local.status === 'paused' || local.status === 'idle') return;
+          // Синхронизируем время для running
+          if(local.status === 'running') local.remSec = st.remaining;
+        } else {
+          // Восстанавливаем таймер с сервера
+          var t = {
+            id: nextId++,
+            name: st.name,
+            durSec: st.duration,
+            remSec: st.remaining,
+            status: 'running',
+            itvId: null,
+            count: 1
+          };
+          timers.push(t);
+          t.itvId = setInterval(function(){ tick(t.id); }, 1000);
+          restored = true;
         }
       });
+      if(restored){
+        renderTimers();
+        updateStats();
+        showToast('🔄 Таймеры восстановлены');
+      }
     })
     .catch(function(){});
 }
