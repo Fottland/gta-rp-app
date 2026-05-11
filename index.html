@@ -466,7 +466,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <script>
-// ============ INIT TG ============
+// ============ INIT TG — userId устанавливается ПЕРВЫМ ============
+var myUserId = 0;
+var myUserName = '';
 (function(){
   try {
     if(window.Telegram && window.Telegram.WebApp){
@@ -775,22 +777,11 @@ function renderAnl(){
 
 // ============ TRANSPORT (HTTP API синхронизация) ============
 var trState = {};
-var myUserId = 0;
-var myUserName = '';
+// myUserId и myUserName объявлены в начале скрипта
 // ЗАМЕНИ НА IP ТВОЕГО СЕРВЕРА:
 var API_URL = 'https://gtaTimer.chickenkiller.com';
 
-(function(){
-  try {
-    if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe){
-      var u = window.Telegram.WebApp.initDataUnsafe.user;
-      if(u){
-        myUserId = u.id;
-        myUserName = u.first_name + (u.username ? ' (@'+u.username+')' : '');
-      }
-    }
-  } catch(e){}
-})();
+// userId уже инициализирован в начале скрипта
 
 function saveNick(){
   var v = document.getElementById('nickInput').value.trim();
