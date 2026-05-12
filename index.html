@@ -301,7 +301,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
   </div>
   <div class="nbar" onclick="toggleNotify()"><span id="nIcon">🔔</span><span id="nText">Уведомления включены ✓</span></div>
-  <div class="nhint">🚀 Уведомления придут даже если закроете приложение!</div>
+  <div class="nhint" id="debugHint">🚀 Уведомления придут даже если закроете приложение!</div>
   <div class="stats-row">
     <div class="scard"><div class="snum" id="statTotal">0</div><div class="slbl">Всего</div></div>
     <div class="scard"><div class="snum" id="statActive" style="color:var(--accent)">0</div><div class="slbl">Активных</div></div>
@@ -1562,6 +1562,9 @@ document.addEventListener('DOMContentLoaded', function() {
       Notification.requestPermission();
   }catch(e){}
   initBotNotif();
+  // Показываем userId для отладки
+  var dbg = document.getElementById('debugHint');
+  if(dbg) dbg.textContent = myUserId ? ('✅ ID: ' + myUserId) : '⚠️ ID не получен — открой через бота';
 
   if(myNick){
     var ni=document.getElementById('nickInput');
