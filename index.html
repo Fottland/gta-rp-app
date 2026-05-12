@@ -469,15 +469,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 // ============ INIT TG — userId устанавливается ПЕРВЫМ ============
 var myUserId = 0;
 var myUserName = '';
+// Пробуем получить userId из Telegram
 (function(){
   try {
     if(window.Telegram && window.Telegram.WebApp){
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
       var u = window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user;
-      if(u){
+      if(u && u.id){
         myUserId = u.id;
         myUserName = u.first_name + (u.username ? ' (@'+u.username+')' : '');
+        // Сохраняем в localStorage для следующих открытий
+        try { localStorage.setItem('tg_user_id', String(myUserId)); localStorage.setItem('tg_user_name', myUserName); } catch(e){}
+      } else {
+        // Восстанавливаем из localStorage если Telegram не передал
+        try {
+          var savedId = localStorage.getItem('tg_user_id');
+          var savedName = localStorage.getItem('tg_user_name');
+          if(savedId){ myUserId = parseInt(savedId); myUserName = savedName || ''; }
+        } catch(e){}
       }
     }
   } catch(e){}
